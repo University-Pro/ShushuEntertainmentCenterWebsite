@@ -5,6 +5,13 @@ __pycache__/
 .venv/
 venv/
 
+# 本地环境配置可能包含密码；保留可提交的配置示例
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
 # 会话签名密钥：泄露等于任何人都能伪造管理员登录态，绝不能进版本库
 Data/SecretKey.txt
 

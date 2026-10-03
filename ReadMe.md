@@ -6,7 +6,7 @@
 
 基于 Flask 与 SQLite 构建，支持响应式布局、深浅主题、后台管理与访问统计。
 
-[快速部署](#快速部署) · [功能亮点](#功能亮点) · [自定义站点](#自定义站点) · [本地运行](#本地运行)
+[快速部署](#快速部署) · [systemd 部署](#systemd-部署) · [功能亮点](#功能亮点) · [自定义站点](#自定义站点) · [本地运行](#本地运行)
 
 </div>
 
@@ -28,7 +28,7 @@
 | 后台管理 | 在线维护站点设置、服务卡片、日志和提示信息 |
 | 账号保护 | 密码登录、失败锁定、TOTP 两步验证及一次性恢复码 |
 | 访问统计 | 浏览量、独立访客、每日趋势、时段分布、热门页面及访问明细 |
-| 轻量部署 | SQLite 存储，Docker Compose 启动，Gunicorn 提供服务 |
+| 轻量部署 | SQLite 存储，支持 Docker Compose 与 systemd，Gunicorn 提供服务 |
 
 首页支持自适应卡片布局；触屏设备和开启“减少动态效果”的设备会跳过倾斜与视差效果。
 
@@ -72,6 +72,64 @@ docker compose -f DockerCompose.yml down
 
 数据库和会话密钥保存在命名卷 `shushu-mainpage-data` 中，重建容器会保留数据。备份或迁移时需保留整个数据卷；执行 `down -v` 会删除数据卷。
 
+## systemd 部署
+
+在使用 systemd 的 Linux 服务器上，也可以直接通过 Gunicorn 运行，支持开机启动、异常重启和集中日志。服务文件位于 [`Systemd/ShushuMainPage.service`](Systemd/ShushuMainPage.service)，默认安装路径为 `/opt/shushu-mainpage`，运行用户为 `shushu`。以下操作需要 sudo 权限，且与 Docker 部署二选一，避免端口冲突。
+
+### 安装
+
+准备 Python、venv 和 Git，建议使用 Python 3.13。首次安装执行：
+
+```bash
+# 创建专用服务账号与安装目录
+sudo useradd --system --user-group --home-dir /opt/shushu-mainpage --shell /usr/sbin/nologin shushu
+sudo git clone https://github.com/University-Pro/ShushuEntertainmentCenterWebsite.git /opt/shushu-mainpage
+
+# 安装依赖，仅数据目录交给服务账号写入
+sudo python3 -m venv /opt/shushu-mainpage/.venv
+sudo /opt/shushu-mainpage/.venv/bin/python -m pip install -r /opt/shushu-mainpage/Requirements.txt
+sudo install -d -o shushu -g shushu -m 700 /opt/shushu-mainpage/Data
+
+# 安装配置与服务文件
+sudo install -o root -g root -m 600 /opt/shushu-mainpage/Systemd/ShushuMainPage.env.example /etc/ShushuMainPage.env
+sudo install -o root -g root -m 644 /opt/shushu-mainpage/Systemd/ShushuMainPage.service /etc/systemd/system/ShushuMainPage.service
+sudoedit /etc/ShushuMainPage.env
+```
+
+启动前，在配置文件中填入至少 12 个字符的 `SHUSHU_ADMIN_PASSWORD`；通过 HTTPS 访问时将 `SESSION_COOKIE_SECURE` 设为 `true`。配置采用 `KEY=value` 格式，不写 `export`；含空格或 `#` 的值请加双引号。已有数据库无需重新设置初始密码，首次初始化完成后可清空该项。
+
+服务文件与 `.env.example` 示例随源码提交；填写真实密码的 `.env` 文件已被 `.gitignore` 排除，请勿将密码写入 `.service` 或示例文件。
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now ShushuMainPage
+sudo systemctl status ShushuMainPage
+```
+
+访问地址与 Docker 部署相同。服务启动时会初始化数据库并清理过期统计，再启动 Gunicorn。数据保存在 `/opt/shushu-mainpage/Data/`，请单独备份该目录。
+
+### 管理与更新
+
+```bash
+# 查看实时日志
+sudo journalctl -u ShushuMainPage -f
+
+# 修改环境配置后重启
+sudo systemctl restart ShushuMainPage
+
+# 停止服务 / 取消开机启动
+sudo systemctl stop ShushuMainPage
+sudo systemctl disable ShushuMainPage
+
+# 更新代码和依赖后启动
+sudo systemctl stop ShushuMainPage
+sudo git -C /opt/shushu-mainpage pull --ff-only
+sudo /opt/shushu-mainpage/.venv/bin/python -m pip install -r /opt/shushu-mainpage/Requirements.txt
+sudo systemctl start ShushuMainPage
+```
+
+若更新包含服务文件改动，请重新复制 `.service` 文件并执行 `daemon-reload`，再重启服务。自定义安装位置时，需同步修改服务文件中的 `WorkingDirectory`、`PATH`、`ExecStart` 和 `ReadWritePaths`；数据目录必须对服务账号可写。服务默认禁止访问用户主目录，建议将项目放在 `/opt` 下。
+
 ## 自定义站点
 
 登录后台后，即可调整站点内容和外观。
@@ -97,13 +155,13 @@ docker compose -f DockerCompose.yml down
 | `SHUSHU_ADMIN_PASSWORD` | 空 | 首次建库必填，至少 12 个字符 |
 | `SHUSHU_SECRET_KEY` | 自动生成并持久化 | 覆盖会话签名密钥 |
 | `SESSION_COOKIE_SECURE` | `false` | HTTPS 部署时设为 `true` |
-| `SERVER_PORT` | `12339` | 容器入口的监听端口 |
+| `SERVER_PORT` | `12339` | Docker / systemd 的监听端口 |
 | `GUNICORN_WORKERS` | `2` | Gunicorn 工作进程数 |
 | `GUNICORN_THREADS` | `4` | 每个工作进程的线程数 |
 | `GUNICORN_TIMEOUT` | `60` | Gunicorn 请求超时秒数 |
 | `GUNICORN_LOG_LEVEL` | `info` | Gunicorn 日志级别 |
 
-容器环境变量在 `DockerCompose.yml` 的 `environment` 中配置；`SHUSHU_ADMIN_PASSWORD` 已支持从当前终端读取。本地运行的地址、端口和访问统计选项在 `AppConfig.py` 中配置。
+容器环境变量在 `DockerCompose.yml` 的 `environment` 中配置；`SHUSHU_ADMIN_PASSWORD` 已支持从当前终端读取。systemd 环境变量在 `/etc/ShushuMainPage.env` 中配置。本地运行的地址、端口和访问统计选项在 `AppConfig.py` 中配置。
 
 修改容器监听端口时，需同步调整 Compose 端口映射与健康检查地址。
 
@@ -132,7 +190,7 @@ export SHUSHU_ADMIN_PASSWORD
 python RunServer.py
 ```
 
-本地运行使用 Flask 开发服务器；正式部署推荐采用上面的 Docker 方式。
+本地运行使用 Flask 开发服务器；正式部署请采用 Docker 或 systemd 方式。
 
 ## 项目结构
 
@@ -143,7 +201,8 @@ python RunServer.py
 ├── Requirements.txt        Python 依赖
 ├── Dockerfile              容器镜像
 ├── DockerCompose.yml       服务编排
-├── EntryPoint.sh           容器启动脚本
+├── EntryPoint.sh           Docker / systemd 启动脚本
+├── Systemd/                Linux 服务文件与环境配置示例
 ├── Api/                    页面与接口
 ├── Core/                   数据存储、账号安全与访问统计
 ├── Web/
