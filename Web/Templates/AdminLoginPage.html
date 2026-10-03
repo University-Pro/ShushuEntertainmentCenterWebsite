@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ DefaultTheme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#F5F5F7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>后台登录 · 鼠鼠娱乐中心</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/AdminStyle.css') }}">
+    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+</head>
+<body>
+<div class="BackdropBase BackdropGradient"></div>
+<div class="BackdropGlow"></div>
+
+<div class="LoginShell">
+    <div class="LoginCard">
+        <h1 class="LoginTitle">鼠鼠娱乐中心</h1>
+        <p class="LoginSubtitle">后台管理登录</p>
+
+        {# ------------------------------------------------ 第一步：账号密码 #}
+        <form id="LoginForm" class="LoginStep" autocomplete="on">
+            <label class="FieldLabel" for="UserName">账号</label>
+            <input id="UserName" name="UserName" class="FieldInput" type="text"
+                   autocomplete="username" placeholder="请输入账号"
+                   autocapitalize="none" autocorrect="off" spellcheck="false" required>
+
+            <label class="FieldLabel" for="Password">密码</label>
+            <input id="Password" name="Password" class="FieldInput" type="password"
+                   autocomplete="current-password" placeholder="请输入密码" required>
+
+            <p id="LoginMessage" class="FormMessage" hidden></p>
+
+            <button id="LoginButton" class="PrimaryButton PrimaryButtonBlock" type="submit">登 录</button>
+        </form>
+
+        {# -------------------------------------------- 第二步：两步验证码 #}
+        <form id="TotpForm" class="LoginStep" hidden autocomplete="off">
+            <p class="SectionHint SectionHintTop">
+                请输入验证器 App 上的 6 位动态码。<br>
+                验证器不可用时，可输入一个恢复码。
+            </p>
+
+            <label class="FieldLabel" for="TotpCode">动态码 / 恢复码</label>
+            <input id="TotpCode" name="TotpCode" class="FieldInput FieldCode" type="text"
+                   inputmode="text" autocomplete="one-time-code" spellcheck="false"
+                   autocapitalize="none" autocorrect="off"
+                   placeholder="000000" maxlength="14">
+
+            <p id="TotpMessage" class="FormMessage" hidden></p>
+
+            <button id="TotpButton" class="PrimaryButton PrimaryButtonBlock" type="submit">验 证</button>
+            <button id="TotpBackButton" class="GhostButton GhostButtonBlock" type="button">返回上一步</button>
+        </form>
+
+        <div class="LoginFooter">
+            <a class="BackLink" href="/">← 返回首页</a>
+            <button id="ThemeToggle" class="MiniButton" type="button"
+                    title="切换深浅色" aria-label="切换深浅色">切换主题</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='Js/AdminScript.js') }}"></script>
+</body>
+</html>

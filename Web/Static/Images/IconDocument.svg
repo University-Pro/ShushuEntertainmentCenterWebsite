@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="PDF编辑器">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#D93A34"/>
+  <path d="M40 30 H74 L92 48 V98 H40 Z" fill="#FFFFFF"/>
+  <path d="M74 30 L92 48 H74 Z" fill="#F2B8B5"/>
+  <g stroke="#D93A34" stroke-width="6" stroke-linecap="round">
+    <path d="M52 66 H80"/>
+    <path d="M52 80 H80"/>
+  </g>
+</svg>

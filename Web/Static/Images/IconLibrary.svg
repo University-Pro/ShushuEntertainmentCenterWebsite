@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="图书馆">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#7A4E2D"/>
+  <path d="M64 40 C54 30 38 26 22 30 V92 C38 88 54 92 64 102 C74 92 90 88 106 92 V30 C90 26 74 30 64 40 Z" fill="#FFFFFF"/>
+  <path d="M64 40 V102" stroke="#7A4E2D" stroke-width="6" stroke-linecap="round"/>
+</svg>

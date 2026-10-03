@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ DefaultTheme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#F5F5F7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>后台管理 · 鼠鼠娱乐中心</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/AdminStyle.css') }}">
+    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+</head>
+<body>
+
+<div class="BackdropBase BackdropGradient"></div>
+
+<header class="AdminHeader">
+    <div class="AdminBrand">
+        <span class="AdminBrandName">鼠鼠娱乐中心</span>
+        <span class="AdminBrandTag">后台管理</span>
+    </div>
+    <nav class="AdminTabs" id="AdminTabs">
+        <button class="TabButton IsActive" data-tab="Logs">更新日志</button>
+        <button class="TabButton" data-tab="Cards">服务卡片</button>
+        <button class="TabButton" data-tab="Panels">面板与提示</button>
+        <button class="TabButton" data-tab="Settings">站点设置</button>
+        <button class="TabButton" data-tab="Account">账号安全</button>
+    </nav>
+    <div class="AdminHeaderActions">
+        <span class="AdminUser">{{ AdminUser }}</span>
+        <button id="ThemeToggle" class="IconButton" type="button"
+                title="切换深浅色" aria-label="切换深浅色">
+            <svg class="IconSun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2"></circle>
+                <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
+            </svg>
+            <svg class="IconMoon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.6 8.6 0 1 0 10.2 10.2Z"></path>
+            </svg>
+        </button>
+        <a class="GhostButton" href="{{ url_for('AnalyticsApi.AnalyticsPage') }}">访问统计</a>
+        <a class="GhostButton" href="/" target="_blank" rel="noopener">查看首页</a>
+        <button id="LogoutButton" class="GhostButton" type="button">退出登录</button>
+    </div>
+</header>
+
+<main class="AdminMain" id="AdminMain">
+
+    {# ---------------------------------------------------------- 更新日志 #}
+    <section class="TabPanel IsActive" data-panel="Logs">
+        <div class="PanelToolbar">
+            <h2 class="SectionTitle">更新日志</h2>
+            <div class="ToolbarRight">
+                <select id="LogPanelFilter" class="FieldInput FieldCompact">
+                    <option value="">全部面板</option>
+                    <option value="RESOURCE">资源更新日志</option>
+                    <option value="SYSTEM">系统更新日志</option>
+                </select>
+                <button id="NewLogButton" class="PrimaryButton" type="button">+ 新增日志</button>
+            </div>
+        </div>
+        <div class="TableWrap">
+            <table class="DataTable">
+                <thead>
+                <tr>
+                    <th style="width:70px">ID</th>
+                    <th style="width:120px">面板</th>
+                    <th style="width:130px">日期</th>
+                    <th>标题 / 内容</th>
+                    <th style="width:80px">排序</th>
+                    <th style="width:80px">可见</th>
+                    <th style="width:150px">操作</th>
+                </tr>
+                </thead>
+                <tbody id="LogTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ---------------------------------------------------------- 服务卡片 #}
+    <section class="TabPanel" data-panel="Cards">
+        <div class="PanelToolbar">
+            <h2 class="SectionTitle">服务卡片</h2>
+            <div class="ToolbarRight">
+                <button id="NewCardButton" class="PrimaryButton" type="button">+ 新增卡片</button>
+            </div>
+        </div>
+        <div class="TableWrap">
+            <table class="DataTable">
+                <thead>
+                <tr>
+                    <th style="width:70px">ID</th>
+                    <th style="width:220px">标题</th>
+                    <th style="width:160px">副标题</th>
+                    <th>跳转地址</th>
+                    <th style="width:170px">图标</th>
+                    <th style="width:80px">排序</th>
+                    <th style="width:80px">可见</th>
+                    <th style="width:150px">操作</th>
+                </tr>
+                </thead>
+                <tbody id="CardTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ---------------------------------------------------------- 面板与提示 #}
+    <section class="TabPanel" data-panel="Panels">
+        <h2 class="SectionTitle">日志面板</h2>
+        <div id="PanelEditorList" class="EditorList"></div>
+
+        <div class="PanelToolbar PanelToolbarSpaced">
+            <h2 class="SectionTitle">面板顶部提示行</h2>
+            <button id="NewNoticeButton" class="PrimaryButton" type="button">+ 新增提示</button>
+        </div>
+        <div id="NoticeEditorList" class="EditorList"></div>
+    </section>
+
+    {# ---------------------------------------------------------- 站点设置 #}
+    <section class="TabPanel" data-panel="Settings">
+        <h2 class="SectionTitle">站点设置</h2>
+        <p class="SectionHint">
+            背景图请把图片放进 <code>Web/Static/Images/</code>，这里只填文件名（例如 <code>Wallpaper.png</code>）；留空则使用内置渐变背景。
+        </p>
+        <form id="SettingsForm" class="SettingsGrid"></form>
+        <button id="SaveSettingsButton" class="PrimaryButton" type="button">保存设置</button>
+    </section>
+
+    {# ---------------------------------------------------------- 账号安全 #}
+    <section class="TabPanel" data-panel="Account">
+        <h2 class="SectionTitle">修改密码</h2>
+        <form id="PasswordForm" class="SettingsGrid SettingsGridNarrow">
+            <label class="FieldLabel" for="OldPassword">原密码</label>
+            <input id="OldPassword" class="FieldInput" type="password" autocomplete="current-password">
+
+            <label class="FieldLabel" for="NewPassword">新密码</label>
+            <input id="NewPassword" class="FieldInput" type="password" autocomplete="new-password">
+
+            <label class="FieldLabel" for="ConfirmPassword">确认新密码</label>
+            <input id="ConfirmPassword" class="FieldInput" type="password" autocomplete="new-password">
+        </form>
+        <button id="ChangePasswordButton" class="PrimaryButton" type="button">更新密码</button>
+
+        {# ------------------------------------------------------ 两步验证 #}
+        <h2 class="SectionTitle SectionTitleSpaced">两步验证（2FA）</h2>
+        <p class="SectionHint">
+            开启后登录需要再输入一次验证器 App 生成的 6 位动态码，兼容
+            Google / Microsoft Authenticator、Authy、1Password 等任意标准验证器。
+        </p>
+
+        <div class="TotpCard">
+            <div class="TotpStatusRow">
+                <span class="TotpStatusLabel">当前状态</span>
+                <span id="TotpStatusTag" class="Tag">读取中…</span>
+            </div>
+            <p id="TotpRecoveryHint" class="TotpHint" hidden></p>
+
+            {# 未开启：走绑定流程 #}
+            <div id="TotpSetupArea">
+                <label class="FieldLabel" for="TotpSetupPassword">当前密码</label>
+                <input id="TotpSetupPassword" class="FieldInput" type="password"
+                       autocomplete="current-password" placeholder="验证身份后再生成二维码">
+
+                <button id="TotpSetupButton" class="PrimaryButton" type="button">生成二维码并绑定</button>
+
+                <div id="TotpQrArea" class="TotpQrArea" hidden>
+                    <div id="TotpQrBox" class="TotpQrBox"></div>
+
+                    <div class="TotpQrSide">
+                        <p class="TotpHint">
+                            用验证器 App 扫描二维码；扫码不便时，手动输入下面的密钥：
+                        </p>
+                        <code id="TotpSecretText" class="TotpSecret"></code>
+
+                        <label class="FieldLabel" for="TotpEnableCode">输入验证器显示的 6 位码以完成绑定</label>
+                        <input id="TotpEnableCode" class="FieldInput FieldCode" type="text"
+                               inputmode="numeric" autocomplete="one-time-code"
+                               spellcheck="false" placeholder="000000" maxlength="6">
+                        <button id="TotpEnableButton" class="PrimaryButton" type="button">确认开启</button>
+                    </div>
+                </div>
+            </div>
+
+            {# 已开启：展示管理操作 #}
+            <div id="TotpManageArea" hidden>
+                <div class="TotpButtonRow">
+                    <button id="TotpRegenerateButton" class="GhostButton" type="button">重新生成恢复码</button>
+                    <button id="TotpDisableButton" class="GhostButton IsDanger" type="button">关闭两步验证</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+{# ------------------------------------------------------------ 弹窗编辑 #}
+<div id="DialogMask" class="DialogMask" hidden>
+    <div class="DialogBox">
+        <div class="DialogHeader">
+            <h3 id="DialogTitle" class="DialogTitle">编辑</h3>
+            <button id="DialogClose" class="DialogClose" type="button">&times;</button>
+        </div>
+        <div id="DialogBody" class="DialogBody"></div>
+        <div class="DialogFooter">
+            <button id="DialogCancel" class="GhostButton" type="button">取消</button>
+            <button id="DialogConfirm" class="PrimaryButton" type="button">保存</button>
+        </div>
+    </div>
+</div>
+
+<div id="ToastBox" class="ToastBox" hidden></div>
+
+<script src="{{ url_for('static', filename='Js/AdminScript.js') }}"></script>
+</body>
+</html>

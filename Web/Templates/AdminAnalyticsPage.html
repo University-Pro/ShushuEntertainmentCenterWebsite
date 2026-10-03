@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ DefaultTheme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#F5F5F7">
+    <title>访问统计 · 鼠鼠娱乐中心</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/AdminStyle.css') }}">
+    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+</head>
+<body>
+
+<div class="BackdropBase BackdropGradient"></div>
+
+{% include "AdminHeaderPartial.html" %}
+
+<main class="AdminMain" id="AdminMain">
+
+    {# ------------------------------------------------ 全局筛选：一行，管住下面所有图 #}
+    <div class="FilterBar">
+        <div class="FilterGroup">
+            {% for range in Filter.Ranges %}
+            <a class="FilterChip{{ ' IsActive' if range.IsActive }}"
+               href="{{ url_for('AnalyticsApi.AnalyticsPage', days=range.Days, bots=(1 if Filter.IncludeBots else 0)) }}">{{ range.Label }}</a>
+            {% endfor %}
+        </div>
+        <div class="FilterGroup">
+            <a class="FilterChip{{ ' IsActive' if Filter.IncludeBots }}"
+               href="{{ url_for('AnalyticsApi.AnalyticsPage', days=Filter.Days, bots=(0 if Filter.IncludeBots else 1)) }}">
+                {{ '含机器人' if Filter.IncludeBots else '已排除机器人' }}
+            </a>
+        </div>
+        <span class="FilterNote">
+            数据自 {{ Coverage.FirstDay or '—' }} 起 · 共 {{ Coverage.Total }} 条记录
+        </span>
+    </div>
+
+    {# ------------------------------------------------ KPI 统计卡 #}
+    <section class="StatRow">
+        <div class="StatTile">
+            <span class="StatLabel">今日浏览量</span>
+            <span class="StatValue">{{ Overview.TodayPageViews }}</span>
+            <span class="StatDelta{{ ' IsUp' if Overview.DeltaPageViews > 0 }}">
+                {{ FormatSignedDelta(Overview.DeltaPageViews) }} <em>较昨日</em>
+            </span>
+        </div>
+        <div class="StatTile">
+            <span class="StatLabel">今日独立访客</span>
+            <span class="StatValue">{{ Overview.TodayVisitors }}</span>
+            <span class="StatDelta{{ ' IsUp' if Overview.DeltaVisitors > 0 }}">
+                {{ FormatSignedDelta(Overview.DeltaVisitors) }} <em>较昨日</em>
+            </span>
+        </div>
+        <div class="StatTile">
+            <span class="StatLabel">近 {{ Overview.RangeDays }} 天浏览量</span>
+            <span class="StatValue">{{ Overview.RangePageViews }}</span>
+            <span class="StatDelta"><em>独立访客 {{ Overview.RangeVisitors }}</em></span>
+        </div>
+        <div class="StatTile">
+            <span class="StatLabel">平均响应时间</span>
+            <span class="StatValue">{{ FormatDuration(Overview.AverageDurationMs) }}</span>
+            <span class="StatDelta"><em>近 {{ Overview.RangeDays }} 天均值</em></span>
+        </div>
+    </section>
+
+    {# ------------------------------------------------ 按天趋势 #}
+    <section class="ChartCard">
+        <div class="ChartHead">
+            <div>
+                <h2 class="ChartTitle">按天访问趋势</h2>
+                <p class="ChartSubtitle">最近 {{ Trend | length }} 天 · 两条序列共用一条纵轴（单位都是次数）</p>
+            </div>
+            <div class="ChartLegend">
+                {% for series in LineChart.Series %}
+                <span class="LegendItem">
+                    <span class="LegendSwatch" style="background: var({{ series.ColorVar }})"></span>
+                    {{ series.Name }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if LineChart.HasData %}
+        <div class="ChartPlotWrap">
+            <svg class="LineChart" viewBox="0 0 {{ LineChart.ViewWidth }} {{ LineChart.ViewHeight }}"
+                 role="img" aria-label="按天访问趋势折线图，详细数值见下方表格">
+
+                {# 网格线：一像素实线，不用虚线 #}
+                {% for tick in LineChart.YTicks %}
+                <line class="ChartGridLine"
+                      x1="{{ LineChart.PlotLeft }}" y1="{{ tick.Y }}"
+                      x2="{{ LineChart.PlotRight }}" y2="{{ tick.Y }}"
+                      vector-effect="non-scaling-stroke"></line>
+                <text class="ChartAxisText" x="{{ LineChart.PlotLeft - 8 }}" y="{{ tick.Y + 4 }}"
+                      text-anchor="end">{{ tick.Label }}</text>
+                {% endfor %}
+
+                <line class="ChartBaseline"
+                      x1="{{ LineChart.PlotLeft }}" y1="{{ LineChart.PlotBottom }}"
+                      x2="{{ LineChart.PlotRight }}" y2="{{ LineChart.PlotBottom }}"
+                      vector-effect="non-scaling-stroke"></line>
+
+                {% for series in LineChart.Series %}
+                <polyline class="ChartLine" points="{{ series.Points }}"
+                          stroke="var({{ series.ColorVar }})"
+                          vector-effect="non-scaling-stroke"></polyline>
+                {% endfor %}
+
+                {# 端点标记：2px 表面色描边环，让它在交叠处也看得清 #}
+                {% for series in LineChart.Series %}
+                <circle class="ChartEndDot" cx="{{ series.EndX }}" cy="{{ series.EndY }}" r="4.5"
+                        fill="var({{ series.ColorVar }})"></circle>
+                {% endfor %}
+
+                {% for series in LineChart.Series %}
+                {% if series.ShowEndLabel %}
+                <text class="ChartEndLabel" x="{{ series.EndX + 8 }}" y="{{ series.EndY + 4 }}"
+                      text-anchor="start">{{ series.EndValue }}</text>
+                {% endif %}
+                {% endfor %}
+
+                {% for label in LineChart.XLabels %}
+                {% if label.Show %}
+                <text class="ChartAxisText" x="{{ label.X }}" y="{{ LineChart.PlotBottom + 18 }}"
+                      text-anchor="{{ label.Anchor }}">{{ label.Label }}</text>
+                {% endif %}
+                {% endfor %}
+
+                <line id="TrendCrosshair" class="ChartCrosshair"
+                      y1="{{ LineChart.PlotTop }}" y2="{{ LineChart.PlotBottom }}"
+                      x1="{{ LineChart.PlotLeft }}" x2="{{ LineChart.PlotLeft }}"
+                      vector-effect="non-scaling-stroke" hidden></line>
+
+                {# 悬停热区：比线宽得多，不用精确瞄准 #}
+                {% for band in LineChart.HitBands %}
+                <rect class="ChartHitBand" x="{{ band.X }}" y="{{ LineChart.PlotTop }}"
+                      width="{{ band.Width }}"
+                      height="{{ LineChart.PlotBottom - LineChart.PlotTop }}"
+                      data-center="{{ band.CenterX }}">
+                    <title>{{ band.Title }}</title>
+                </rect>
+                {% endfor %}
+            </svg>
+            <div id="TrendTooltip" class="ChartTooltip" hidden></div>
+        </div>
+        {% else %}
+        <p class="ChartEmpty">这个时间段还没有访问记录</p>
+        {% endif %}
+
+        {# 表格视图：图表的等价读法，不依赖颜色 #}
+        <details class="TableToggle">
+            <summary>查看数据表</summary>
+            <div class="TableWrap TableWrapInner">
+                <table class="DataTable">
+                    <thead>
+                    <tr><th>日期</th><th>浏览量</th><th>独立访客</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in Trend %}
+                    <tr>
+                        <td class="CellStrong">{{ item.Date }}</td>
+                        <td class="CellNumeric">{{ item.PageViews }}</td>
+                        <td class="CellNumeric">{{ item.Visitors }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </section>
+
+    {# ------------------------------------------------ 时段分布 + 热门页面 #}
+    <div class="ChartGrid">
+
+        <section class="ChartCard">
+            <div class="ChartHead">
+                <div>
+                    <h2 class="ChartTitle">访问时段分布</h2>
+                    <p class="ChartSubtitle">近 {{ Days }} 天 · 按小时汇总（{{ '含机器人' if IncludeBots else '不含机器人' }}）</p>
+                </div>
+            </div>
+
+            {% if Hourly.HasData %}
+            <div class="ColumnChart">
+                <div class="ColumnAxis">
+                    {% for tick in Hourly.YTicks %}
+                    <span class="ColumnAxisTick">{{ tick.Label }}</span>
+                    {% endfor %}
+                </div>
+                <div class="ColumnPlot">
+                    {% for column in Hourly.Columns %}
+                    <div class="ColumnSlot">
+                        <div class="ColumnBar"
+                             style="height: {{ column.Percent }}%"
+                             data-tip="{{ column.Label }} 时 · {{ column.Value }} 次"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="ColumnLabels">
+                {% for column in Hourly.Columns %}
+                <span class="ColumnLabel">{{ column.Label if column.Hour % 3 == 0 else '' }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="ChartEmpty">这个时间段还没有访问记录</p>
+            {% endif %}
+
+            <details class="TableToggle">
+                <summary>查看数据表</summary>
+                <div class="TableWrap TableWrapInner">
+                    <table class="DataTable">
+                        <thead><tr><th>时段</th><th>访问次数</th></tr></thead>
+                        <tbody>
+                        {% for column in Hourly.Columns %}
+                        {% if column.Value %}
+                        <tr>
+                            <td class="CellStrong">{{ column.Label }}:00 – {{ column.Label }}:59</td>
+                            <td class="CellNumeric">{{ column.Value }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </section>
+
+        <section class="ChartCard">
+            <div class="ChartHead">
+                <div>
+                    <h2 class="ChartTitle">热门页面</h2>
+                    <p class="ChartSubtitle">近 {{ Days }} 天 · 按访问次数排序</p>
+                </div>
+            </div>
+
+            {% if TopPaths.HasData %}
+            <ul class="RankingList">
+                {% for bar in TopPaths.Bars %}
+                <li class="RankingItem">
+                    <span class="RankingLabel" title="{{ bar.Label }}">{{ bar.Label }}</span>
+                    <span class="RankingTrack">
+                        <span class="RankingBar" style="width: {{ bar.Percent }}%"></span>
+                    </span>
+                    <span class="RankingValue">{{ bar.Value }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="ChartEmpty">这个时间段还没有访问记录</p>
+            {% endif %}
+
+            <details class="TableToggle">
+                <summary>查看数据表</summary>
+                <div class="TableWrap TableWrapInner">
+                    <table class="DataTable">
+                        <thead><tr><th>页面</th><th>访问次数</th><th>独立访客</th><th>平均耗时</th></tr></thead>
+                        <tbody>
+                        {% for item in TopPathsRaw %}
+                        <tr>
+                            <td class="CellStrong">{{ item.Path }}</td>
+                            <td class="CellNumeric">{{ item.Hits }}</td>
+                            <td class="CellNumeric">{{ item.Visitors }}</td>
+                            <td class="CellNumeric">{{ FormatDuration(item.AverageDurationMs) }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </section>
+
+    </div>
+
+    {# ------------------------------------------------ 来源 #}
+    <section class="ChartCard">
+        <div class="ChartHead">
+            <div>
+                <h2 class="ChartTitle">访问来源</h2>
+                <p class="ChartSubtitle">近 {{ Days }} 天 · 按来源主机名归类</p>
+            </div>
+        </div>
+
+        <div class="TableWrap TableWrapInner">
+            <table class="DataTable">
+                <thead><tr><th>来源</th><th style="width:140px">访问次数</th></tr></thead>
+                <tbody>
+                {% for item in TopReferers %}
+                <tr>
+                    <td class="CellStrong">{{ item.Display }}</td>
+                    <td class="CellNumeric">{{ item.Hits }}</td>
+                </tr>
+                {% else %}
+                <tr><td class="EmptyRow" colspan="2">这个时间段还没有访问记录</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <p class="PageFootNote">
+        只看公开页面，静态资源与健康检查不计入。访客身份用不可逆哈希统计，
+        同一天的同一设备算一个访客；<a class="AccentLink" href="{{ url_for('AnalyticsApi.RecordsPage', days=Days) }}">查看访问明细 →</a>
+    </p>
+
+</main>
+
+<script src="{{ url_for('static', filename='Js/AdminScript.js') }}"></script>
+</body>
+</html>

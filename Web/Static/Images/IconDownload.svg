@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="下载站">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#2F80ED"/>
+  <path d="M64 28 v44" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+  <path d="M44 56 L64 78 L84 56" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="34" y="90" width="60" height="11" rx="5.5" fill="#FFFFFF"/>
+</svg>

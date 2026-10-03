@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="鼠鼠LLM">
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#101418"/>
+  <g stroke="#E9EDF2" stroke-width="4.5" fill="none" stroke-linecap="round">
+    <path d="M32 46 L64 30 L96 46 L96 82 L64 98 L32 82 Z"/>
+    <path d="M32 46 L64 62 L96 46"/>
+    <path d="M64 62 L64 98"/>
+  </g>
+  <circle cx="64" cy="30" r="6" fill="#FF8A5B"/>
+  <circle cx="32" cy="82" r="6" fill="#5AC8FA"/>
+  <circle cx="96" cy="82" r="6" fill="#5AC8FA"/>
+</svg>

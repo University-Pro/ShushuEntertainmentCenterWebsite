@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="教务系统">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#1F4E9C"/>
+  <path d="M64 26 L114 52 L64 78 L14 52 Z" fill="#FFFFFF"/>
+  <path d="M38 62 V88 C38 98 90 98 90 88 V62" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M100 59 V84" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="100" cy="91" r="7" fill="#FFFFFF"/>
+</svg>

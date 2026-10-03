@@ -1,0 +1,1379 @@
+/* ==========================================================================
+   鼠鼠娱乐中心 —— 后台样式
+   与首页共用同一套设计令牌：Apple 式材料（毛玻璃 + 内高光 + 多层柔和阴影）、
+   中性灰白配色、苹果蓝强调色。深浅色由 <html data-theme="light|dark"> 控制，
+   "auto" 已由 ThemeBoot.js 在首屏前解析。
+   ========================================================================== */
+
+/* ------------------------------------------------------------ 设计令牌 */
+
+:root {
+    --Accent:          #0071E3;
+    --AccentHover:     #0077ED;
+    --AccentWash:      rgba(0, 113, 227, 0.10);
+
+    --PageBackground:  #F5F5F7;
+    --Surface:         rgba(255, 255, 255, 0.72);
+    --SurfaceRaised:   rgba(255, 255, 255, 0.90);
+    --SurfaceSolid:    #FFFFFF;
+    --SurfaceMuted:    rgba(0, 0, 0, 0.035);
+
+    --Border:          rgba(0, 0, 0, 0.08);
+    --BorderStrong:    rgba(0, 0, 0, 0.16);
+    --InnerHighlight:  rgba(255, 255, 255, 0.70);
+
+    --TextPrimary:     #1D1D1F;
+    --TextSecondary:   #424245;
+    --TextMuted:       #86868B;
+
+    --Danger:          #D70015;
+    --DangerWash:      rgba(215, 0, 21, 0.10);
+    --Success:         #1D8A3E;
+    --SuccessWash:     rgba(29, 138, 62, 0.12);
+
+    --MaterialBlur:    saturate(180%) blur(20px);
+
+    --RadiusLg:        20px;
+    --RadiusMd:        14px;
+    --RadiusSm:        10px;
+
+    --ShadowRest:
+        0 1px 2px  rgba(0, 0, 0, 0.04),
+        0 4px 16px rgba(0, 0, 0, 0.05),
+        0 12px 36px rgba(0, 0, 0, 0.04);
+    --ShadowLift:
+        0 2px 4px  rgba(0, 0, 0, 0.05),
+        0 12px 32px rgba(0, 0, 0, 0.09),
+        0 28px 64px rgba(0, 0, 0, 0.07);
+    --ShadowModal:
+        0 8px 20px rgba(0, 0, 0, 0.12),
+        0 32px 72px rgba(0, 0, 0, 0.24);
+
+    --EaseOut:  cubic-bezier(0.16, 1, 0.3, 1);
+    --EaseSoft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-theme="dark"] {
+    --Accent:          #0A84FF;
+    --AccentHover:     #409CFF;
+    --AccentWash:      rgba(10, 132, 255, 0.16);
+
+    --PageBackground:  #000000;
+    --Surface:         rgba(28, 28, 30, 0.72);
+    --SurfaceRaised:   rgba(38, 38, 40, 0.90);
+    --SurfaceSolid:    #1C1C1E;
+    --SurfaceMuted:    rgba(255, 255, 255, 0.05);
+
+    --Border:          rgba(255, 255, 255, 0.10);
+    --BorderStrong:    rgba(255, 255, 255, 0.20);
+    --InnerHighlight:  rgba(255, 255, 255, 0.07);
+
+    --TextPrimary:     #F5F5F7;
+    --TextSecondary:   #C7C7CC;
+    --TextMuted:       #8E8E93;
+
+    --Danger:          #FF453A;
+    --DangerWash:      rgba(255, 69, 58, 0.16);
+    --Success:         #30D158;
+    --SuccessWash:     rgba(48, 209, 88, 0.16);
+
+    --ShadowRest:
+        0 1px 2px  rgba(0, 0, 0, 0.32),
+        0 4px 16px rgba(0, 0, 0, 0.34),
+        0 12px 36px rgba(0, 0, 0, 0.28);
+    --ShadowLift:
+        0 2px 4px  rgba(0, 0, 0, 0.38),
+        0 12px 32px rgba(0, 0, 0, 0.46),
+        0 28px 64px rgba(0, 0, 0, 0.40);
+    --ShadowModal:
+        0 8px 20px rgba(0, 0, 0, 0.50),
+        0 32px 72px rgba(0, 0, 0, 0.65);
+}
+
+* { box-sizing: border-box; }
+
+/* hidden 属性必须能压过下面任何 display 声明，否则弹窗遮罩关不掉 */
+[hidden] { display: none !important; }
+
+html, body { margin: 0; padding: 0; min-height: 100%; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "PingFang SC", "Helvetica Neue", "Microsoft YaHei", "Noto Sans SC",
+                 Arial, sans-serif;
+    color: var(--TextPrimary);
+    background: var(--PageBackground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: clip;
+}
+
+/* 去掉双击缩放带来的 300ms 延迟与误缩放 */
+.TabButton,
+.IconButton,
+.PrimaryButton,
+.GhostButton,
+.MiniButton,
+.DialogClose {
+    touch-action: manipulation;
+}
+
+a { color: inherit; text-decoration: none; }
+
+code {
+    padding: 1px 6px;
+    font-size: 12.5px;
+    background: var(--SurfaceMuted);
+    border-radius: 5px;
+}
+
+/* ------------------------------------------------------------ 背景层 */
+
+.BackdropBase {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-size: cover;
+    background-position: center;
+}
+
+.BackdropGradient {
+    background:
+        radial-gradient(1100px 720px at 12% 4%, rgba(0, 113, 227, 0.10), transparent 62%),
+        radial-gradient(980px 680px at 88% 8%,  rgba(94, 92, 230, 0.08), transparent 62%),
+        linear-gradient(180deg, #FAFAFC 0%, #EFF0F4 100%);
+}
+
+html[data-theme="dark"] .BackdropGradient {
+    background:
+        radial-gradient(1100px 720px at 12% 4%, rgba(10, 132, 255, 0.18), transparent 62%),
+        radial-gradient(980px 680px at 88% 8%,  rgba(94, 92, 230, 0.14), transparent 62%),
+        linear-gradient(180deg, #101012 0%, #000000 100%);
+}
+
+/* 登录页专用：压暗一档，让中间的卡片跳出来 */
+.BackdropGlow {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(720px 620px at 26% 26%, rgba(10, 132, 255, 0.24), transparent 66%),
+        radial-gradient(660px 560px at 76% 72%, rgba(94, 92, 230, 0.20), transparent 66%);
+}
+
+/* ------------------------------------------------------------ 表格与卡片表面 */
+
+.TableWrap,
+.EditorCard,
+.SettingsGrid,
+.TotpCard {
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusMd);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+/* ------------------------------------------------------------ 登录页 */
+
+.LoginShell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 24px;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.LoginCard {
+    width: 100%;
+    max-width: 400px;
+    padding: 38px 34px 24px;
+    background: var(--SurfaceRaised);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusLg);
+    box-shadow: var(--ShadowModal), inset 0 1px 0 var(--InnerHighlight);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+.LoginTitle {
+    margin: 0;
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-align: center;
+}
+
+.LoginSubtitle {
+    margin: 7px 0 26px;
+    font-size: 13px;
+    text-align: center;
+    color: var(--TextMuted);
+}
+
+.LoginStep { display: flex; flex-direction: column; }
+
+.LoginFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--Border);
+}
+
+.BackLink {
+    font-size: 13px;
+    color: var(--TextMuted);
+    transition: color 0.25s var(--EaseSoft);
+}
+
+.BackLink:hover { color: var(--Accent); }
+
+/* ------------------------------------------------------------ 通用控件 */
+
+.FieldLabel {
+    margin: 0 0 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--TextSecondary);
+}
+
+.FieldInput {
+    width: 100%;
+    padding: 10px 13px;
+    margin-bottom: 17px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--TextPrimary);
+    background: var(--SurfaceSolid);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusSm);
+    outline: none;
+    transition: border-color 0.25s var(--EaseSoft), box-shadow 0.25s var(--EaseSoft);
+}
+
+html[data-theme="dark"] .FieldInput { background: rgba(255, 255, 255, 0.06); }
+
+textarea.FieldInput { resize: vertical; min-height: 92px; line-height: 1.6; }
+
+select.FieldInput { cursor: pointer; }
+
+.FieldInput:focus {
+    border-color: var(--Accent);
+    box-shadow: 0 0 0 3.5px var(--AccentWash);
+}
+
+.FieldCompact { width: auto; margin-bottom: 0; padding: 8px 11px; font-size: 13px; }
+
+/* 动态码/恢复码：等宽 + 字距，方便核对 */
+.FieldCode {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 19px;
+    letter-spacing: 4px;
+    text-align: center;
+}
+
+.PrimaryButton {
+    padding: 11px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    color: #FFFFFF;
+    background: var(--Accent);
+    border: none;
+    border-radius: var(--RadiusSm);
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), transform 0.2s var(--EaseOut),
+                opacity 0.25s var(--EaseSoft);
+}
+
+.PrimaryButton:hover { background: var(--AccentHover); }
+.PrimaryButton:active { transform: scale(0.98); }
+.PrimaryButton:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.GhostButton {
+    padding: 9px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--TextSecondary);
+    background: transparent;
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusSm);
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft),
+                border-color 0.25s var(--EaseSoft);
+}
+
+.GhostButton:hover {
+    background: var(--SurfaceMuted);
+    color: var(--TextPrimary);
+    border-color: var(--BorderStrong);
+}
+
+.GhostButton.IsDanger { color: var(--Danger); border-color: var(--DangerWash); }
+.GhostButton.IsDanger:hover { background: var(--DangerWash); color: var(--Danger); }
+
+.MiniButton {
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--TextSecondary);
+    background: var(--SurfaceSolid);
+    border: 1px solid var(--Border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.25s var(--EaseSoft), border-color 0.25s var(--EaseSoft);
+}
+
+html[data-theme="dark"] .MiniButton { background: rgba(255, 255, 255, 0.06); }
+
+.MiniButton:hover { border-color: var(--Accent); color: var(--Accent); }
+.MiniButton.IsDanger:hover { border-color: var(--Danger); color: var(--Danger); }
+
+.PrimaryButtonBlock,
+.GhostButtonBlock { width: 100%; margin-top: 10px; }
+
+.PrimaryButtonBlock { margin-top: 0; }
+
+.FormMessage {
+    margin: 0 0 15px;
+    padding: 10px 13px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: var(--RadiusSm);
+    background: var(--DangerWash);
+    color: var(--Danger);
+}
+
+.FormMessage.IsSuccess { background: var(--SuccessWash); color: var(--Success); }
+
+/* ------------------------------------------------------------ 顶栏 */
+
+.AdminHeader {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 0 24px;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+    height: 64px;
+    background: var(--Surface);
+    border-bottom: 1px solid var(--Border);
+    box-shadow: 0 1px 0 var(--InnerHighlight), 0 4px 20px rgba(0, 0, 0, 0.05);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+.AdminBrand {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.22;
+    white-space: nowrap;
+}
+
+.AdminBrandName { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+.AdminBrandTag  { font-size: 11.5px; color: var(--TextMuted); }
+
+.AdminTabs {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.AdminTabs::-webkit-scrollbar { display: none; }
+
+.TabButton {
+    padding: 8px 15px;
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--TextSecondary);
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft);
+}
+
+.TabButton:hover { background: var(--SurfaceMuted); }
+
+.TabButton.IsActive { color: var(--Accent); background: var(--AccentWash); }
+
+.AdminHeaderActions { display: flex; align-items: center; gap: 8px; }
+
+.AdminUser { font-size: 13px; color: var(--TextMuted); }
+
+.IconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    color: var(--TextSecondary);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft),
+                transform 0.2s var(--EaseOut);
+}
+
+.IconButton:hover { background: var(--AccentWash); color: var(--Accent); }
+.IconButton:active { transform: scale(0.93); }
+
+.IconButton svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.IconMoon { display: none; }
+html[data-theme="dark"] .IconSun  { display: none; }
+html[data-theme="dark"] .IconMoon { display: block; }
+
+/* ------------------------------------------------------------ 主体 */
+
+.AdminMain {
+    padding: 26px 24px 64px;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+    padding-bottom: max(64px, env(safe-area-inset-bottom));
+    max-width: 1480px;
+    margin: 0 auto;
+}
+
+.TabPanel { display: none; }
+.TabPanel.IsActive { display: block; }
+
+.SectionTitle {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.SectionTitleSpaced { margin-top: 44px; }
+
+.SectionHint {
+    margin: 11px 0 19px;
+    font-size: 13px;
+    line-height: 1.72;
+    color: var(--TextMuted);
+}
+
+.SectionHintTop { margin-top: 0; }
+
+.PanelToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 17px;
+}
+
+.PanelToolbarSpaced { margin-top: 36px; }
+
+.ToolbarRight { display: flex; align-items: center; gap: 10px; }
+
+/* ------------------------------------------------------------ 数据表格 */
+
+.TableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.DataTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.DataTable th {
+    padding: 13px 15px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--TextMuted);
+    background: var(--SurfaceMuted);
+    border-bottom: 1px solid var(--Border);
+    white-space: nowrap;
+}
+
+.DataTable td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--Border);
+    vertical-align: middle;
+    color: var(--TextSecondary);
+}
+
+.DataTable tbody tr:last-child td { border-bottom: none; }
+.DataTable tbody tr { transition: background 0.2s var(--EaseSoft); }
+.DataTable tbody tr:hover { background: var(--SurfaceMuted); }
+
+.CellStrong { color: var(--TextPrimary); font-weight: 500; }
+
+.CellEllipsis {
+    max-width: 520px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.Tag {
+    display: inline-block;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 999px;
+    background: var(--SurfaceMuted);
+    color: var(--TextSecondary);
+}
+
+.Tag.IsResource { background: var(--AccentWash); color: var(--Accent); }
+.Tag.IsSystem   { background: var(--SurfaceMuted); color: var(--TextSecondary); }
+.Tag.IsVisible  { background: var(--SuccessWash); color: var(--Success); }
+.Tag.IsHidden   { background: var(--SurfaceMuted); color: var(--TextMuted); }
+
+.RowActions { display: flex; gap: 7px; }
+
+.EmptyRow {
+    text-align: center;
+    color: var(--TextMuted);
+    padding: 38px 0 !important;
+}
+
+/* ------------------------------------------------------------ 卡片式编辑器 */
+
+.EditorList { display: grid; gap: 14px; }
+
+.EditorCard { padding: 19px 21px; }
+
+.EditorCardHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 15px;
+}
+
+.EditorCardName { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+
+.EditorGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 0 18px;
+}
+
+.EditorGrid .FieldInput { margin-bottom: 14px; }
+
+.FieldSpanAll { grid-column: 1 / -1; }
+
+/* ------------------------------------------------------------ 站点设置 */
+
+.SettingsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 0 22px;
+    padding: 23px 25px;
+    margin-bottom: 18px;
+}
+
+.SettingsGridNarrow {
+    max-width: 520px;
+    grid-template-columns: 1fr;
+}
+
+/* ------------------------------------------------------------ 两步验证 */
+
+.TotpCard {
+    max-width: 720px;
+    padding: 23px 25px;
+}
+
+.TotpStatusRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.TotpStatusLabel { font-size: 14px; font-weight: 500; color: var(--TextSecondary); }
+
+.TotpHint {
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.72;
+    color: var(--TextMuted);
+}
+
+.TotpQrArea {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--Border);
+}
+
+.TotpQrBox {
+    flex: none;
+    width: 190px;
+    padding: 11px;
+    background: #FFFFFF;    /* 二维码必须白底，深色模式下也一样 */
+    border-radius: var(--RadiusMd);
+    box-shadow: var(--ShadowRest);
+}
+
+.TotpQrBox svg { display: block; width: 100%; height: auto; }
+
+.TotpQrSide { flex: 1; min-width: 0; }
+.TotpQrSide .FieldInput { margin-bottom: 12px; }
+
+.TotpSecret {
+    display: block;
+    margin-bottom: 18px;
+    padding: 11px 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    letter-spacing: 1.5px;
+    word-break: break-all;
+    background: var(--SurfaceMuted);
+    border-radius: var(--RadiusSm);
+    user-select: all;
+}
+
+.TotpButtonRow { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.RecoveryCodeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 10px;
+}
+
+.RecoveryCode {
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-align: center;
+    background: var(--SurfaceMuted);
+    border-radius: var(--RadiusSm);
+    user-select: all;
+}
+
+/* ------------------------------------------------------------ 弹窗 */
+
+.DialogMask {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.34);
+    backdrop-filter: saturate(140%) blur(6px);
+    -webkit-backdrop-filter: saturate(140%) blur(6px);
+}
+
+html[data-theme="dark"] .DialogMask { background: rgba(0, 0, 0, 0.56); }
+
+.DialogBox {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 620px;
+    max-height: 86vh;
+    max-height: 86dvh;
+    background: var(--SurfaceSolid);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusLg);
+    box-shadow: var(--ShadowModal);
+    overflow: hidden;
+}
+
+.DialogHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex: none;
+    padding: 17px 22px;
+    border-bottom: 1px solid var(--Border);
+}
+
+.DialogTitle { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+
+.DialogClose {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--TextMuted);
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft);
+}
+
+.DialogClose:hover { background: var(--SurfaceMuted); color: var(--TextPrimary); }
+
+.DialogBody {
+    flex: 1;
+    min-height: 0;
+    padding: 21px 22px 5px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.DialogBody .FieldInput { margin-bottom: 15px; }
+
+.DialogFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex: none;
+    padding: 15px 22px;
+    border-top: 1px solid var(--Border);
+    background: var(--SurfaceMuted);
+}
+
+/* ------------------------------------------------------------ 提示条 */
+
+.ToastBox {
+    position: fixed;
+    left: 50%;
+    bottom: 40px;
+    bottom: max(40px, env(safe-area-inset-bottom));
+    z-index: 80;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 32px);
+    padding: 12px 22px;
+    font-size: 13.5px;
+    text-align: center;
+    color: #FFFFFF;
+    background: rgba(29, 29, 31, 0.92);
+    border-radius: 12px;
+    box-shadow: var(--ShadowModal);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+html[data-theme="dark"] .ToastBox {
+    color: #1D1D1F;
+    background: rgba(245, 245, 247, 0.92);
+}
+
+.ToastBox.IsError { background: rgba(215, 0, 21, 0.95); color: #FFFFFF; }
+html[data-theme="dark"] .ToastBox.IsError { background: rgba(255, 69, 58, 0.95); color: #FFFFFF; }
+
+/* ------------------------------------------------------------ 子页面导航 */
+
+.AdminSubNav { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.AdminSubNav::-webkit-scrollbar { display: none; }
+
+.TabLink {
+    padding: 8px 15px;
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--TextSecondary);
+    border-radius: 9px;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft);
+}
+
+.TabLink:hover { background: var(--SurfaceMuted); }
+.TabLink.IsActive { color: var(--Accent); background: var(--AccentWash); }
+
+/* ------------------------------------------------------------ 图表配色 */
+
+/* 取自数据可视化规范里已验证的参考调色板，未做改动——替换配色必须重新跑
+   色差校验，否则色盲可辨性没有保障。深浅两套是各自选定的步进，不是自动反色。 */
+:root {
+    --ChartSeriesOne: #2a78d6;   /* 蓝 */
+    --ChartSeriesTwo: #eb6834;   /* 橙 */
+    --ChartGrid:      #e1e0d9;
+    --ChartBaseline:  #c3c2b7;
+    --ChartAxisInk:   #898781;
+}
+
+html[data-theme="dark"] {
+    --ChartSeriesOne: #3987e5;
+    --ChartSeriesTwo: #d95926;
+    --ChartGrid:      #2c2c2a;
+    --ChartBaseline:  #383835;
+    --ChartAxisInk:   #898781;
+}
+
+/* ------------------------------------------------------------ 筛选栏 */
+
+/* 全局筛选：一行，管住下面所有图表。每张图各带一套筛选是反模式。 */
+.FilterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.FilterGroup { display: flex; gap: 4px; }
+
+.FilterChip {
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--TextSecondary);
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    border-radius: 999px;
+    transition: color 0.25s var(--EaseSoft), border-color 0.25s var(--EaseSoft),
+                background 0.25s var(--EaseSoft);
+}
+
+.FilterChip:hover { border-color: var(--BorderStrong); }
+.FilterChip.IsActive {
+    color: #FFFFFF;
+    background: var(--Accent);
+    border-color: var(--Accent);
+}
+
+.FilterNote { margin-left: auto; font-size: 12.5px; color: var(--TextMuted); }
+
+.FilterSearch { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.FilterSearch .FieldInput { margin-bottom: 0; min-width: 200px; }
+
+/* ------------------------------------------------------------ 统计卡 */
+
+.StatRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.StatTile {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 18px 20px;
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusMd);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+.StatLabel { font-size: 12.5px; color: var(--TextMuted); }
+
+/* 大数字用比例数字，tabular-nums 会让 121 在大字号下显得松散 */
+.StatValue {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--TextPrimary);
+}
+
+.StatDelta { font-size: 12.5px; color: var(--TextMuted); }
+.StatDelta em { font-style: normal; opacity: 0.85; }
+.StatDelta.IsUp { color: var(--Success); }
+
+/* ------------------------------------------------------------ 图表卡片 */
+
+.ChartGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.ChartCard {
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusMd);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+.ChartGrid .ChartCard { margin-bottom: 0; }
+
+.ChartHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.ChartTitle { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.ChartSubtitle { margin: 5px 0 0; font-size: 12.5px; color: var(--TextMuted); }
+
+.ChartEmpty {
+    margin: 34px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--TextMuted);
+}
+
+/* 图例：两条及以上序列必须有图例，身份不能只靠颜色传达 */
+.ChartLegend { display: flex; gap: 14px; flex-wrap: wrap; }
+
+.LegendItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    color: var(--TextSecondary);
+}
+
+.LegendSwatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+
+/* ------------------------------------------------------------ 折线图 */
+
+/* 窄屏时横向滚动而不是让图表缩到看不清 */
+.ChartPlotWrap { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.LineChart { display: block; width: 100%; min-width: 600px; height: auto; }
+
+.ChartGridLine { stroke: var(--ChartGrid); stroke-width: 1; }
+.ChartBaseline { stroke: var(--ChartBaseline); stroke-width: 1; }
+
+.ChartAxisText {
+    fill: var(--ChartAxisInk);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ChartLine {
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+/* 端点标记带 2px 表面色描边环，交叠处也能看清 */
+.ChartEndDot { stroke: var(--SurfaceSolid); stroke-width: 2; }
+
+/* 端点标签用文字色，不用序列色——浅色序列当文字读不清 */
+.ChartEndLabel {
+    fill: var(--TextPrimary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ChartHitBand { fill: transparent; cursor: crosshair; }
+.ChartHitBand:hover { fill: rgba(128, 138, 158, 0.08); }
+
+.ChartCrosshair {
+    stroke: var(--BorderStrong);
+    stroke-width: 1;
+    pointer-events: none;
+}
+
+.ChartTooltip {
+    position: absolute;
+    z-index: 5;
+    /* 放在绘图区内侧而不是上方：外层是横向滚动容器，超出会被裁掉 */
+    transform: translate(-50%, 0);
+    padding: 7px 11px;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--TextPrimary);
+    background: var(--SurfaceSolid);
+    border: 1px solid var(--Border);
+    border-radius: 9px;
+    box-shadow: var(--ShadowLift);
+    pointer-events: none;
+}
+
+/* ------------------------------------------------------------ 柱状图 */
+
+/* 用 CSS 画而不是 SVG：SVG 里按 viewBox 算的宽度会随容器缩放，
+   管不住「柱宽不超过 24px」这条 */
+.ColumnChart { display: flex; gap: 10px; height: 168px; }
+
+.ColumnAxis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: none;
+    text-align: right;
+    font-size: 11px;
+    color: var(--ChartAxisInk);
+    font-variant-numeric: tabular-nums;
+}
+
+.ColumnPlot {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;                 /* 相邻柱之间留 2px 表面色缝隙 */
+    flex: 1;
+    min-width: 0;
+    border-bottom: 1px solid var(--ChartBaseline);
+}
+
+.ColumnSlot { flex: 1; min-width: 0; display: flex; align-items: flex-end; justify-content: center; }
+
+.ColumnBar {
+    width: 100%;
+    max-width: 24px;
+    min-height: 2px;
+    border-radius: 4px 4px 0 0;    /* 数据端圆角，基线端方角 */
+    background: var(--ChartSeriesOne);
+    position: relative;
+    transition: opacity 0.2s var(--EaseSoft);
+}
+
+.ColumnBar:hover { opacity: 0.75; }
+
+/* 悬停显示数值。纯 CSS，data-tip 由服务端填好 */
+.ColumnBar::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 7px);
+    transform: translateX(-50%);
+    padding: 5px 9px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    color: var(--TextPrimary);
+    background: var(--SurfaceSolid);
+    border: 1px solid var(--Border);
+    border-radius: 8px;
+    box-shadow: var(--ShadowLift);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s var(--EaseSoft);
+    z-index: 4;
+}
+
+.ColumnBar:hover::after { opacity: 1; }
+
+.ColumnLabels { display: flex; gap: 2px; margin: 7px 0 0 40px; }
+
+.ColumnLabel {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--ChartAxisInk);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ 排行条 */
+
+.RankingList { margin: 0; padding: 0; list-style: none; display: grid; gap: 11px; }
+
+.RankingItem {
+    display: grid;
+    grid-template-columns: minmax(90px, 34%) 1fr auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.RankingLabel {
+    font-size: 13px;
+    color: var(--TextPrimary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.RankingTrack {
+    height: 10px;
+    background: var(--SurfaceMuted);
+    border-radius: 0 5px 5px 0;
+    overflow: hidden;
+}
+
+/* 所有条同色。按数值深浅上色会把条长重复编码一遍，白烧掉唯一的自由通道 */
+.RankingBar {
+    display: block;
+    height: 100%;
+    min-width: 2px;
+    background: var(--ChartSeriesOne);
+    border-radius: 0 4px 4px 0;
+}
+
+.RankingValue {
+    font-size: 12.5px;
+    color: var(--TextSecondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ 图表数据表 */
+
+.TableToggle { margin-top: 16px; border-top: 1px solid var(--Border); padding-top: 12px; }
+
+.TableToggle summary {
+    font-size: 12.5px;
+    color: var(--Accent);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.TableToggle summary::-webkit-details-marker { display: none; }
+.TableToggle summary::before { content: "▸ "; }
+.TableToggle[open] summary::before { content: "▾ "; }
+.TableToggle summary:hover { opacity: 0.75; }
+
+.TableWrapInner { margin-top: 12px; box-shadow: none; background: transparent; }
+
+.CellNumeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.DataTableWide { min-width: 900px; }
+
+/* ------------------------------------------------------------ 分页 */
+
+.PagerBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.PagerNote { font-size: 12.5px; color: var(--TextMuted); font-variant-numeric: tabular-nums; }
+
+.GhostButton.IsDisabled { opacity: 0.4; cursor: not-allowed; }
+.GhostButton.IsDisabled:hover { background: transparent; }
+
+.PageFootNote {
+    margin: 22px 0 0;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: var(--TextMuted);
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+/* ------------------------------------------------- 触屏设备（按指针类型） */
+
+/* 用 pointer:coarse 而不是宽度：iPhone 横屏是 667–956px、iPad 是 768–1024px，
+   全都错过 ≤640 断点，但同样是触屏，需要一样大的触控目标和输入框字号 */
+@media (pointer: coarse) {
+    /* iOS 对 <16px 的输入框会在聚焦时放大整页且不缩回 */
+    .FieldInput { font-size: 16px; }
+    .FieldCode  { font-size: 19px; }
+
+    .IconButton { width: 44px; height: 44px; }
+    .IconButton svg { width: 22px; height: 22px; }
+
+    .PrimaryButton, .GhostButton { min-height: 46px; }
+    .TabButton { min-height: 42px; }
+
+    /* 编辑/删除挨太近容易误触，而删除是破坏性操作 */
+    .RowActions { gap: 12px; }
+    .MiniButton { min-height: 42px; padding: 9px 15px; }
+    .DialogClose { width: 42px; height: 42px; }
+
+    /* 手机上每个 EditorCard 各带一层 20px 模糊，滑动会掉帧 */
+    .TableWrap,
+    .EditorCard,
+    .SettingsGrid,
+    .TotpCard { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* ------------------------------------------------- 平板（≤1024） */
+
+@media (max-width: 1024px) {
+    .AdminHeader {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 18px;
+        /* 简写会把基类的安全区内边距一起冲掉，这里补回来 */
+        padding-left: max(18px, env(safe-area-inset-left));
+        padding-right: max(18px, env(safe-area-inset-right));
+        gap: 12px;
+    }
+
+    /* 标签栏独占一行，横向可滑 */
+    .AdminTabs {
+        order: 3;
+        width: 100%;
+        flex: none;
+        padding-bottom: 2px;
+    }
+
+    .AdminHeaderActions { margin-left: auto; }
+
+    .AdminMain {
+        padding: 20px 18px 56px;
+        padding-left: max(18px, env(safe-area-inset-left));
+        padding-right: max(18px, env(safe-area-inset-right));
+        padding-bottom: max(56px, env(safe-area-inset-bottom));
+    }
+
+    .PanelToolbar { flex-wrap: wrap; }
+
+    .TotpQrArea { flex-direction: column; align-items: stretch; }
+    .TotpQrBox { width: 170px; margin: 0 auto; }
+
+    /* 表格在窄屏的处理。
+       只设 min-width 不够：auto 布局下，nowrap 的摘要列和不可断行的 URL 列
+       会把表宽顶到 1000px 以上，手机上要横滑两三屏才够得到「编辑/删除」。
+       所以放开折行 + 把操作列吸在右边。 */
+    .DataTable { min-width: 680px; }
+
+    .DataTable td,
+    .DataTable th { overflow-wrap: anywhere; }
+
+    .CellEllipsis {
+        white-space: normal;
+        max-width: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* 操作列吸右，横滑时始终可见 */
+    .DataTable th:last-child,
+    .DataTable td:last-child {
+        position: sticky;
+        right: 0;
+        background: var(--SurfaceSolid);
+        box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.22);
+    }
+
+    .DataTable thead th:last-child { background: var(--SurfaceMuted); }
+}
+
+/* ------------------------------------------------- 手机（≤640） */
+
+@media (max-width: 640px) {
+    .LoginShell {
+        padding: 16px;
+        padding-top: max(16px, env(safe-area-inset-top));
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    .LoginCard { padding: 30px 22px 20px; }
+    .LoginTitle { font-size: 22px; }
+
+    /* 输入框 16px 起步，否则 iOS 聚焦时会自动缩放整页 */
+    .FieldInput { padding: 13px 14px; font-size: 16px; }
+    .FieldCode  { font-size: 19px; }
+    /* 这两条在 ≤640 会连同 .FieldInput 一起被上面的规则盖掉，补回来 */
+    .FieldCompact { font-size: 14px; padding: 9px 12px; }
+    .FieldLabel { font-size: 13.5px; }
+
+    /* 触控目标不小于 44px */
+    .PrimaryButton, .GhostButton { min-height: 46px; }
+    .MiniButton { min-height: 38px; padding: 8px 14px; }
+    .IconButton { width: 44px; height: 44px; }
+    .DialogClose { width: 40px; height: 40px; }
+
+    .AdminHeader {
+        padding: 10px 15px;
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+        gap: 10px;
+    }
+    .AdminBrandName { font-size: 15px; }
+    .AdminUser { display: none; }
+
+    .AdminMain {
+        padding: 16px 13px 48px;
+        padding-left: max(13px, env(safe-area-inset-left));
+        padding-right: max(13px, env(safe-area-inset-right));
+        padding-bottom: max(48px, env(safe-area-inset-bottom));
+    }
+
+    .SectionTitle { font-size: 17px; }
+    .PanelToolbarSpaced { margin-top: 28px; }
+
+    .TabButton { padding: 10px 13px; font-size: 13px; }
+
+    /* 弹窗改底部抽屉：确认按钮永远在拇指够得到的位置 */
+    .DialogMask {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .DialogBox {
+        max-width: none;
+        max-height: 92dvh;
+        border-radius: var(--RadiusLg) var(--RadiusLg) 0 0;
+        border-bottom: none;
+    }
+
+    .DialogHeader,
+    .DialogBody,
+    .DialogFooter { padding-left: 17px; padding-right: 17px; }
+
+    .DialogFooter {
+        padding-bottom: max(15px, env(safe-area-inset-bottom));
+    }
+
+    .EditorGrid,
+    .SettingsGrid { grid-template-columns: 1fr; padding: 17px; }
+
+    .EditorCard { padding: 15px 16px; }
+    .TotpCard { padding: 18px 16px; }
+
+    .TotpSecret { font-size: 12.5px; letter-spacing: 1px; }
+    .RecoveryCodeGrid { grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); }
+
+    .ToastBox {
+        left: 13px;
+        right: 13px;
+        transform: none;
+        max-width: none;
+    }
+}
+
+/* ------------------------------------------------- 小屏（≤380） */
+
+@media (max-width: 380px) {
+    .AdminBrandTag { display: none; }
+    .TabButton { padding: 9px 11px; font-size: 12.5px; }
+}
+
+/* ------------------------------------------------- 降级处理 */
+
+@media (hover: none) {
+    .TabButton:hover { background: transparent; }
+    .TabButton.IsActive:hover { background: var(--AccentWash); }
+    .DataTable tbody tr:hover { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}

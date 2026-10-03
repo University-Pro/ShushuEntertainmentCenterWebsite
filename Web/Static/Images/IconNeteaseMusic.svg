@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="网易云音乐">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#C20C0C"/>
+  <path d="M80 90 V36 C96 39 102 50 100 62" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="63" cy="90" rx="19" ry="14" fill="#FFFFFF" transform="rotate(-20 63 90)"/>
+</svg>

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 会话签名密钥：泄露等于任何人都能伪造管理员登录态，绝不能进版本库
+Data/SecretKey.txt
+
+# 数据与日志
+Data/*.db
+Data/*.db-wal
+Data/*.db-shm
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store

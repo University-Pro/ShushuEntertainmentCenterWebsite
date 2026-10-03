@@ -1,0 +1,17 @@
+# 鼠鼠娱乐中心 —— 运行依赖
+# 安装：python -m pip install -r Requirements.txt
+#
+# 说明：SQLite 由 Python 标准库 sqlite3 提供，无需额外安装。
+# 密码哈希使用 Werkzeug 自带的 pbkdf2 实现，随 Flask 一同安装。
+
+Flask
+Werkzeug
+
+# 两步验证：pyotp 负责 TOTP 算码/验码，qrcode 负责把 otpauth 链接画成二维码
+# qrcode 走 SVG 输出，不依赖 Pillow
+pyotp
+qrcode
+
+# 生产部署用的 WSGI 服务器。本地直接跑 RunServer.py 不需要它，
+# 但 Docker 镜像里用的是 gunicorn，不是 Flask 自带的开发服务器。
+gunicorn

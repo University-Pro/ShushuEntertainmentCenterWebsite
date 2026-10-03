@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ Content.Settings.DefaultTheme or 'auto' }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ Content.Settings.SiteTitle }}</title>
+    <meta name="description" content="{{ Content.Settings.SiteDescription }}">
+    <meta name="theme-color" content="#F5F5F7">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/MainStyle.css') }}">
+    {# 主题必须在首屏绘制前定下来，所以这个脚本放在 head 里同步加载 #}
+    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+</head>
+<body>
+{# 背景：填了 BackgroundImageUrl 用图片，否则走内置渐变 #}
+{% if Content.Settings.BackgroundImageUrl %}
+<div class="BackdropBase BackdropImage"
+     style="background-image: url('{{ url_for('static', filename='Images/' + Content.Settings.BackgroundImageUrl) }}')"></div>
+<div class="BackdropScrim"></div>
+{% else %}
+<div class="BackdropBase BackdropGradient"></div>
+<div class="BackdropGlow" id="BackdropGlow"></div>
+{% endif %}
+
+<div class="PageShell">
+
+    {# ------------------------------------------------------------ 顶栏 #}
+    <header class="TopBar">
+        <a class="BrandArea" href="/">
+            <span class="BrandTitle">{{ Content.Settings.SiteTitle }}</span>
+            <span class="BrandEmoji">{{ Content.Settings.SiteTitleEmoji }}</span>
+        </a>
+
+        <div class="TopBarActions">
+            <button id="ThemeToggle" class="IconButton" type="button"
+                    title="切换深浅色" aria-label="切换深浅色">
+                <svg class="IconSun" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.2"></circle>
+                    <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
+                </svg>
+                <svg class="IconMoon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.6 8.6 0 1 0 10.2 10.2Z"></path>
+                </svg>
+            </button>
+            <a class="IconButton" href="/Admin/Login" title="后台管理" aria-label="后台管理">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="8.2" r="3.7"></circle>
+                    <path d="M4.8 20c0-3.7 3.2-6.4 7.2-6.4s7.2 2.7 7.2 6.4"></path>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    {# ------------------------------------------------------------ 主体 #}
+    {% set PreviewCount = Content.Settings.LogPreviewCount | int(6) %}
+    <main class="MainArea">
+
+        {% for Panel in Content.Panels %}
+        {% set ExtraCount = Panel.Logs | length - PreviewCount %}
+        <section class="SurfacePanel LogPanel" data-panel="{{ Panel.PanelKey }}">
+            <div class="PanelHeading">
+                <h2 class="PanelTitle">{{ Panel.Title }}</h2>
+                {% if Panel.Subtitle or Panel.SubtitleLinkText %}
+                <p class="PanelSubtitle">
+                    {{ Panel.Subtitle }}
+                    {% if Panel.SubtitleLinkText %}
+                    <a class="AccentLink" href="{{ Panel.SubtitleLinkUrl }}"
+                       {% if Panel.SubtitleLinkUrl.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ Panel.SubtitleLinkText }}</a>
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="PanelBody">
+                {% for Notice in Panel.Notices %}
+                <p class="NoticeLine">
+                    {% if Notice.Prefix %}<span class="NoticePrefix">{{ Notice.Prefix }}</span>{% endif %}{{ Notice.Content }}
+                    {% if Notice.LinkUrl %}
+                    <a class="AccentLink NoticeLink" href="{{ Notice.LinkUrl }}" target="_blank" rel="noopener">{{ Notice.LinkUrl }}</a>
+                    {% endif %}
+                </p>
+                {% endfor %}
+
+                {% if Panel.Logs %}
+                {# 折叠开关：纯 CSS 驱动，禁用 JS 也能正常展开/收起 #}
+                {% if ExtraCount > 0 %}
+                <input type="checkbox" class="ExpandState"
+                       id="ExpandState-{{ Panel.PanelKey }}" aria-label="展开或收起全部日志">
+                {% endif %}
+
+                <ul class="LogList">
+                    {% for Log in Panel.Logs %}
+                    <li class="LogItem{% if ExtraCount > 0 and loop.index > PreviewCount %} IsExtra{% endif %}">
+                        <span class="LogMarker"></span>
+                        <span class="LogDate">{{ Log.DisplayDate }}：</span>
+                        {% if Log.Title %}<span class="LogTitle">{{ Log.Title }}</span>{% endif %}
+                        {% if Log.Content %}<span class="LogContent">{{ Log.Content }}</span>{% endif %}
+                        {% if Log.LinkUrl %}
+                        <a class="AccentLink LogLink" href="{{ Log.LinkUrl }}" target="_blank" rel="noopener">{{ Log.LinkUrl }}</a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                {% if ExtraCount > 0 %}
+                <label class="ExpandButton" for="ExpandState-{{ Panel.PanelKey }}">
+                    <span class="ExpandMore">展开全部（还有 {{ ExtraCount }} 条）</span>
+                    <span class="ExpandLess">收起</span>
+                </label>
+                {% endif %}
+                {% else %}
+                <p class="EmptyHint">暂无记录</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endfor %}
+
+        {# 服务入口：所有卡片等大，排成同一个网格 #}
+        <section class="CardGrid">
+            {% for Card in Content.Cards %}
+            <a class="SurfaceCard ServiceCard" href="{{ Card.TargetUrl }}"
+               style="--CardColor: {{ Card.ThemeColor }}"
+               {% if Card.TargetUrl.startswith('http') %}target="_blank" rel="noopener"{% endif %}>
+                <span class="CardBacking" aria-hidden="true"></span>
+                <span class="CardLabel">{{ Card.Title }}</span>
+                <span class="CardImageWrap">
+                    {% if Card.ImageUrl %}
+                    <img class="CardImage" src="{{ url_for('static', filename='Images/' + Card.ImageUrl) }}" alt="{{ Card.Title }}">
+                    {% else %}
+                    <span class="CardImageFallback">{{ Card.Title[:1] }}</span>
+                    {% endif %}
+                </span>
+                {% if Card.Subtitle %}<span class="CardSubtitle">{{ Card.Subtitle }}</span>{% endif %}
+            </a>
+            {% endfor %}
+        </section>
+
+    </main>
+
+    <footer class="PageFooter">
+        <span>{{ Content.Settings.FooterText }}</span>
+    </footer>
+</div>
+
+<script src="{{ url_for('static', filename='Js/MainScript.js') }}"></script>
+</body>
+</html>

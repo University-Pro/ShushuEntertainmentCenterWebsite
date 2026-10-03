@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ DefaultTheme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#F5F5F7">
+    <title>访问明细 · 鼠鼠娱乐中心</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/AdminStyle.css') }}">
+    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+</head>
+<body>
+
+<div class="BackdropBase BackdropGradient"></div>
+
+{% include "AdminHeaderPartial.html" %}
+
+<main class="AdminMain" id="AdminMain">
+
+    {# 全局筛选：和总览页共用同一套参数，切页面时范围不丢 #}
+    <div class="FilterBar">
+        <div class="FilterGroup">
+            {% for range in Filter.Ranges %}
+            <a class="FilterChip{{ ' IsActive' if range.IsActive }}"
+               href="{{ url_for('AnalyticsApi.RecordsPage', days=range.Days, bots=(1 if Filter.IncludeBots else 0), q=PathFilter or None) }}">{{ range.Label }}</a>
+            {% endfor %}
+        </div>
+        <div class="FilterGroup">
+            <a class="FilterChip{{ ' IsActive' if Filter.IncludeBots }}"
+               href="{{ url_for('AnalyticsApi.RecordsPage', days=Filter.Days, bots=(0 if Filter.IncludeBots else 1), q=PathFilter or None) }}">
+                {{ '只看机器人' if Filter.IncludeBots else '只看真人' }}
+            </a>
+        </div>
+
+        <form class="FilterSearch" method="get" action="{{ url_for('AnalyticsApi.RecordsPage') }}">
+            <input type="hidden" name="days" value="{{ Days }}">
+            {% if IncludeBots %}<input type="hidden" name="bots" value="1">{% endif %}
+            <input class="FieldInput FieldCompact" type="search" name="q"
+                   value="{{ PathFilter }}" placeholder="按路径筛选，如 /Download"
+                   autocapitalize="none" autocorrect="off" spellcheck="false">
+            <button class="GhostButton" type="submit">筛选</button>
+        </form>
+    </div>
+
+    <section class="ChartCard">
+        <div class="ChartHead">
+            <div>
+                <h2 class="ChartTitle">访问明细</h2>
+                <p class="ChartSubtitle">
+                    近 {{ Days }} 天共 {{ Total }} 条 · 第 {{ Page }} / {{ TotalPages }} 页
+                </p>
+            </div>
+        </div>
+
+        <div class="TableWrap TableWrapInner">
+            <table class="DataTable DataTableWide">
+                <thead>
+                <tr>
+                    <th style="width:160px">时间</th>
+                    <th style="width:230px">路径</th>
+                    <th style="width:70px">状态</th>
+                    <th style="width:90px">耗时</th>
+                    <th style="width:130px">来源 IP</th>
+                    <th style="width:170px">客户端</th>
+                    <th style="width:150px">来源</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for record in Records %}
+                <tr>
+                    <td class="CellNumeric">{{ record.VisitedAt }}</td>
+                    <td class="CellStrong CellEllipsis" title="{{ record.Path }}">
+                        {{ record.Path }}{% if record.IsBot %} <span class="Tag IsHidden">机器人</span>{% endif %}
+                    </td>
+                    <td class="CellNumeric">{{ record.StatusCode }}</td>
+                    <td class="CellNumeric">{{ FormatDuration(record.DurationMs) }}</td>
+                    <td class="CellNumeric">{{ record.ClientIp }}</td>
+                    <td>{{ record.UserAgent }}</td>
+                    <td class="CellEllipsis" title="{{ record.Referer }}">{{ record.Referer }}</td>
+                </tr>
+                {% else %}
+                <tr><td class="EmptyRow" colspan="7">这个条件下没有访问记录</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if TotalPages > 1 %}
+        <nav class="PagerBar">
+            {% if HasPrevious %}
+            <a class="GhostButton" href="{{ url_for('AnalyticsApi.RecordsPage', days=Days, bots=(1 if IncludeBots else 0), q=PathFilter or None, page=PreviousPage) }}">← 上一页</a>
+            {% else %}
+            <span class="GhostButton IsDisabled">← 上一页</span>
+            {% endif %}
+
+            <span class="PagerNote">第 {{ Page }} / {{ TotalPages }} 页</span>
+
+            {% if HasNext %}
+            <a class="GhostButton" href="{{ url_for('AnalyticsApi.RecordsPage', days=Days, bots=(1 if IncludeBots else 0), q=PathFilter or None, page=NextPage) }}">下一页 →</a>
+            {% else %}
+            <span class="GhostButton IsDisabled">下一页 →</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </section>
+
+    <p class="PageFootNote">
+        只记录页面访问，静态资源不计入；查询串不落库。
+        {% if not Records %}没有数据时可以先访问几次首页再来看看。{% endif %}
+        <a class="AccentLink" href="{{ url_for('AnalyticsApi.AnalyticsPage', days=Days) }}">← 返回统计总览</a>
+    </p>
+
+</main>
+
+<script src="{{ url_for('static', filename='Js/AdminScript.js') }}"></script>
+</body>
+</html>

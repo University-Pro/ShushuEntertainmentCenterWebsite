@@ -1,0 +1,65 @@
+# 鼠鼠娱乐中心 —— 容器编排
+#
+# compose 默认只认 docker-compose.yml / compose.yaml，本文件按项目的驼峰命名
+# 规则取名，所以要显式指定：
+#
+#   docker compose -f DockerCompose.yml up -d --build
+#   docker compose -f DockerCompose.yml logs -f
+#   docker compose -f DockerCompose.yml down
+
+services:
+  mainpage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shushu-mainpage:latest
+    container_name: shushu-mainpage
+    restart: unless-stopped
+
+    ports:
+      - "12339:12339"
+
+    # 数据目录用命名卷，由 Docker 管理权限；换成宿主机目录的话
+    # （./Data:/app/Data）要先把该目录 chown 给 uid 1000，否则容器写不进去。
+    volumes:
+      - MainPageData:/app/Data
+
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: "12339"
+      # 首次建库必填，至少 12 个字符。已有数据库不会因此重置密码。
+      SHUSHU_ADMIN_PASSWORD: "${SHUSHU_ADMIN_PASSWORD:-}"
+      # 默认忽略转发头；需要代理时只填实际代理 IP / CIDR，逗号分隔。
+      SHUSHU_TRUSTED_PROXIES: "${SHUSHU_TRUSTED_PROXIES:-}"
+
+      # 会话密钥。留空则用卷里的 Data/SecretKey.txt（首次启动自动生成）。
+      # 需要多副本共享会话时才设置，一旦设置就要保管好——
+      # 它等同于管理员登录态的签名私钥。
+      # SHUSHU_SECRET_KEY: "在此填入随机字符串"
+
+      # SQLite 是单写者模型：进程数别开大，并发靠线程。
+      # 出现 "database is locked" 就把进程数降到 1。
+      GUNICORN_WORKERS: "2"
+      GUNICORN_THREADS: "4"
+      GUNICORN_LOG_LEVEL: "info"
+
+      # 走 HTTPS 反向代理时打开，浏览器才不会通过明文 HTTP 回传会话 cookie。
+      # 由 AppConfig.py 读取同名环境变量。
+      # SESSION_COOKIE_SECURE: "True"
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:12339/Health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  MainPageData:
+    name: shushu-mainpage-data

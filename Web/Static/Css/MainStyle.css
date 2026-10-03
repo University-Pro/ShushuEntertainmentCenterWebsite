@@ -1,0 +1,811 @@
+/* ==========================================================================
+   鼠鼠娱乐中心 —— 首页样式
+   设计语言：Apple 式材料（毛玻璃 + 内高光 + 多层柔和阴影）
+   3D 部分只做三件事：卡片指针跟随倾斜、图标 Z 轴分层、背景光斑视差。
+   其余一律克制，不做霓虹/粒子/旋转方块那类效果。
+   深浅色由 <html data-theme="light|dark"> 决定，"auto" 已由内联脚本提前解析。
+   ========================================================================== */
+
+/* ------------------------------------------------------------ 设计令牌 */
+
+:root {
+    /* 颜色 —— 中性灰白为主，彩色只出现在强调位置 */
+    --PageBackground:  #F5F5F7;
+    --Surface:         rgba(255, 255, 255, 0.72);
+    --SurfaceRaised:   rgba(255, 255, 255, 0.86);
+    --SurfaceSolid:    #FFFFFF;
+    --Border:          rgba(0, 0, 0, 0.07);
+    --BorderStrong:    rgba(0, 0, 0, 0.14);
+    --InnerHighlight:  rgba(255, 255, 255, 0.70);
+
+    --TextPrimary:     #1D1D1F;
+    --TextSecondary:   #424245;
+    --TextMuted:       #86868B;
+
+    --Accent:          #0071E3;
+    --AccentHover:     #0077ED;
+    --AccentWash:      rgba(0, 113, 227, 0.10);
+
+    /* 阴影：三层叠加，近处紧、远处散，这是 Apple 材料的关键 */
+    --ShadowRest:
+        0 1px 2px  rgba(0, 0, 0, 0.04),
+        0 4px 16px rgba(0, 0, 0, 0.05),
+        0 12px 36px rgba(0, 0, 0, 0.04);
+    --ShadowLift:
+        0 2px 4px  rgba(0, 0, 0, 0.05),
+        0 12px 32px rgba(0, 0, 0, 0.09),
+        0 28px 64px rgba(0, 0, 0, 0.07);
+    --ShadowFloat:
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        0 20px 44px rgba(0, 0, 0, 0.14);
+
+    /* 材料：Apple 网页上那套 saturate + blur */
+    --MaterialBlur:   saturate(180%) blur(20px);
+    --ScrimBlur:      saturate(140%) blur(8px);
+
+    --RadiusShell: 20px;
+    --RadiusCard:  18px;
+    --GridGap:     16px;
+
+    /* 动效曲线：Apple 常用的收尾缓出 */
+    --EaseOut: cubic-bezier(0.16, 1, 0.3, 1);
+    --EaseSoft: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* 3D 倾斜角度由 MainScript.js 的 TILT_RANGE_DEGREES 控制 */
+}
+
+html[data-theme="dark"] {
+    --PageBackground:  #000000;
+    --Surface:         rgba(28, 28, 30, 0.72);
+    --SurfaceRaised:   rgba(38, 38, 40, 0.86);
+    --SurfaceSolid:    #1C1C1E;
+    --Border:          rgba(255, 255, 255, 0.09);
+    --BorderStrong:    rgba(255, 255, 255, 0.18);
+    --InnerHighlight:  rgba(255, 255, 255, 0.07);
+
+    --TextPrimary:     #F5F5F7;
+    --TextSecondary:   #C7C7CC;
+    --TextMuted:       #8E8E93;
+
+    --Accent:          #0A84FF;
+    --AccentHover:     #409CFF;
+    --AccentWash:      rgba(10, 132, 255, 0.16);
+
+    --ShadowRest:
+        0 1px 2px  rgba(0, 0, 0, 0.30),
+        0 4px 16px rgba(0, 0, 0, 0.34),
+        0 12px 36px rgba(0, 0, 0, 0.28);
+    --ShadowLift:
+        0 2px 4px  rgba(0, 0, 0, 0.36),
+        0 12px 32px rgba(0, 0, 0, 0.46),
+        0 28px 64px rgba(0, 0, 0, 0.40);
+    --ShadowFloat:
+        0 4px 10px rgba(0, 0, 0, 0.42),
+        0 20px 44px rgba(0, 0, 0, 0.55);
+}
+
+* { box-sizing: border-box; }
+
+/* hidden 属性必须能压过其它 display 声明 */
+[hidden] { display: none !important; }
+
+html, body { margin: 0; padding: 0; min-height: 100%; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "PingFang SC", "Helvetica Neue", "Microsoft YaHei", "Noto Sans SC",
+                 Arial, sans-serif;
+    color: var(--TextPrimary);
+    background: var(--PageBackground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    /* clip 而不是 hidden：hidden 会把溢出藏起来（问题还在，只是看不见了），
+       部分 WebKit 版本下还会和 sticky 顶栏打架 */
+    overflow-x: clip;
+    text-rendering: optimizeLegibility;
+}
+
+/* 去掉双击缩放带来的 300ms 延迟与误缩放 */
+.ServiceCard,
+.IconButton,
+.ExpandButton,
+.AccentLink {
+    touch-action: manipulation;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ------------------------------------------------------------ 背景层 */
+
+.BackdropBase {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* 内置渐变：四个低饱和光斑叠在浅灰/纯黑底上 */
+.BackdropGradient {
+    background:
+        radial-gradient(1100px 720px at 12% 4%,  rgba(0, 113, 227, 0.13), transparent 62%),
+        radial-gradient(980px 680px at 88% 8%,   rgba(94, 92, 230, 0.10), transparent 62%),
+        radial-gradient(900px 820px at 68% 96%,  rgba(90, 200, 250, 0.11), transparent 62%),
+        radial-gradient(760px 620px at 22% 88%,  rgba(255, 149, 0, 0.06), transparent 62%),
+        linear-gradient(180deg, #FAFAFC 0%, #EFF0F4 100%);
+}
+
+html[data-theme="dark"] .BackdropGradient {
+    background:
+        radial-gradient(1100px 720px at 12% 4%,  rgba(10, 132, 255, 0.22), transparent 62%),
+        radial-gradient(980px 680px at 88% 8%,   rgba(94, 92, 230, 0.17), transparent 62%),
+        radial-gradient(900px 820px at 68% 96%,  rgba(48, 209, 88, 0.07), transparent 62%),
+        linear-gradient(180deg, #101012 0%, #000000 100%);
+}
+
+/* 视差光斑：跟随指针做极小幅位移，制造纵深 */
+.BackdropGlow {
+    position: fixed;
+    inset: -8%;
+    z-index: -2;
+    pointer-events: none;
+    background:
+        radial-gradient(620px 620px at 28% 30%, rgba(0, 113, 227, 0.16), transparent 66%),
+        radial-gradient(560px 560px at 74% 64%, rgba(94, 92, 230, 0.12), transparent 66%);
+    transform: translate3d(var(--ParallaxX, 0px), var(--ParallaxY, 0px), 0);
+    transition: transform 1.4s var(--EaseOut);
+}
+
+html[data-theme="dark"] .BackdropGlow {
+    background:
+        radial-gradient(620px 620px at 28% 30%, rgba(10, 132, 255, 0.20), transparent 66%),
+        radial-gradient(560px 560px at 74% 64%, rgba(94, 92, 230, 0.16), transparent 66%);
+}
+
+/* 用了自定义壁纸时的压暗层，保证面板上的字读得清 */
+.BackdropScrim {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: rgba(10, 12, 20, 0.34);
+    backdrop-filter: var(--ScrimBlur);
+    -webkit-backdrop-filter: var(--ScrimBlur);
+}
+
+html[data-theme="dark"] .BackdropScrim { background: rgba(0, 0, 0, 0.56); }
+
+/* ------------------------------------------------------------ 页面骨架 */
+
+.PageShell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--GridGap);
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 1640px;
+    margin: 0 auto;
+    padding: 14px 24px 20px;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+/* ------------------------------------------------------------ 顶栏 */
+
+.TopBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 20px;
+    border-radius: 16px;
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+}
+
+.BrandArea {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    min-width: 0;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.02em;   /* Apple 式紧字距 */
+}
+
+.BrandTitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.BrandEmoji { flex: none; font-size: 19px; }
+
+.TopBarActions { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.IconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    color: var(--TextSecondary);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.25s var(--EaseSoft), color 0.25s var(--EaseSoft),
+                transform 0.25s var(--EaseOut);
+}
+
+.IconButton:hover { background: var(--AccentWash); color: var(--Accent); }
+.IconButton:active { transform: scale(0.92); }
+
+.IconButton svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* 太阳 / 月亮按主题切换 */
+.IconMoon { display: none; }
+html[data-theme="dark"] .IconSun  { display: none; }
+html[data-theme="dark"] .IconMoon { display: block; }
+
+/* ------------------------------------------------------------ 主区域网格 */
+
+.MainArea {
+    flex: 1;
+    display: grid;
+    /* 必须写 minmax(0, …)：grid 子项默认 min-width:auto，
+       轨道会被不可断行的长 URL 撑大，再被 body 的 overflow-x:hidden 裁掉，
+       表现是「右侧内容被切掉且滚不到」，不是滚动条 */
+    grid-template-columns: minmax(0, 1.30fr) minmax(0, 1fr);
+    grid-template-areas:
+        "resource system"
+        "cards    cards";
+    /* 日志行按内容高度（内部已被 45dvh 封顶），卡片行吃掉剩余空间 */
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--GridGap);
+    min-height: 0;
+}
+
+.LogPanel[data-panel="RESOURCE"] { grid-area: resource; }
+.LogPanel[data-panel="SYSTEM"]   { grid-area: system; }
+.LogPanel:not([data-panel="RESOURCE"]):not([data-panel="SYSTEM"]) { grid-area: resource; }
+
+/* 服务卡片网格：所有卡片等大等宽，顺序由 SortOrder 决定 */
+.CardGrid {
+    grid-area: cards;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* 卡片行平分剩余高度，但不低于 150px */
+    grid-auto-rows: minmax(150px, 1fr);
+    gap: var(--GridGap);
+    min-height: 0;
+}
+
+/* ------------------------------------------------------------ 材料基类 */
+
+.SurfacePanel {
+    position: relative;
+    background: var(--Surface);
+    border: 1px solid var(--Border);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    border-radius: var(--RadiusShell);
+    overflow: hidden;
+}
+
+/* 卡片刻意不写 overflow:hidden、也不把毛玻璃放在自己身上。
+   按 CSS Transforms 2，overflow 非 visible 和 backdrop-filter 都属于
+   「分组属性」，会把 transform-style 的计算值压成 flat —— 子元素的
+   translateZ() 就变成空操作，Z 轴分层根本不生效。
+   所以材料下放到 .CardBacking 子元素，卡片本身保住 preserve-3d。 */
+.SurfaceCard {
+    position: relative;
+    border: 1px solid var(--Border);
+    border-radius: var(--RadiusCard);
+    box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+    transform-style: preserve-3d;
+}
+
+/* 卡片的毛玻璃底。放在 translateZ(0) 上，被 translateZ 更大的内容压住，
+   这样 3D 排序和视觉层序是一致的。 */
+.CardBacking {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--Surface);
+    backdrop-filter: var(--MaterialBlur);
+    -webkit-backdrop-filter: var(--MaterialBlur);
+    transform: translateZ(0);
+}
+
+/* ------------------------------------------------------------ 日志面板 */
+
+.LogPanel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    /* 面板最高约占屏幕 45%，超出部分在面板内部滚动 */
+    max-height: 45vh;
+    max-height: 45dvh;
+    transition: box-shadow 0.5s var(--EaseOut), border-color 0.5s var(--EaseOut);
+}
+
+.LogPanel:hover {
+    box-shadow: var(--ShadowLift), inset 0 1px 0 var(--InnerHighlight);
+    border-color: var(--BorderStrong);
+}
+
+.PanelHeading {
+    flex: none;
+    padding: 22px 28px 14px;
+    text-align: center;
+}
+
+.PanelTitle {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--TextPrimary);
+}
+
+.PanelSubtitle {
+    margin: 7px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--TextMuted);
+}
+
+.AccentLink {
+    color: var(--Accent);
+    font-weight: 500;
+    transition: opacity 0.25s var(--EaseSoft);
+}
+
+.AccentLink:hover { opacity: 0.7; text-decoration: underline; }
+
+.PanelBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 28px 24px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.PanelBody::-webkit-scrollbar { width: 7px; }
+.PanelBody::-webkit-scrollbar-track { background: transparent; }
+.PanelBody::-webkit-scrollbar-thumb {
+    background: var(--BorderStrong);
+    border-radius: 999px;
+}
+.PanelBody::-webkit-scrollbar-thumb:hover { background: var(--TextMuted); }
+
+/* ------------------------------------------------------------ 提示行 */
+
+.NoticeLine {
+    margin: 0 0 9px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--TextSecondary);
+}
+
+.NoticePrefix { color: var(--Accent); font-weight: 600; }
+
+.NoticeLink { display: inline-block; font-size: 12.5px; word-break: break-all; }
+
+/* ------------------------------------------------------------ 日志列表 */
+
+.LogList { margin: 16px 0 0; padding: 0; list-style: none; }
+
+.LogItem {
+    position: relative;
+    margin: 0 0 11px;
+    padding-left: 18px;
+    font-size: 14px;
+    line-height: 1.72;
+    color: var(--TextSecondary);
+}
+
+.LogMarker {
+    position: absolute;
+    left: 3px;
+    top: 9px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--Accent);
+    opacity: 0.75;
+}
+
+.LogDate  { color: var(--Accent); font-weight: 600; }
+.LogTitle { color: var(--TextPrimary); font-weight: 500; }
+.LogContent { color: var(--TextSecondary); }
+
+.LogLink {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    word-break: break-all;
+}
+
+.EmptyHint {
+    margin: 24px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--TextMuted);
+}
+
+/* ------------------------------------------------------------ 长文本折行 */
+
+/* 管理员填的 URL、日志里的长链接都没有天然断点，
+   不强制折行就会撑破网格轨道（见 .MainArea 的注释） */
+.AccentLink,
+.LogContent,
+.LogTitle,
+.LogLink,
+.NoticeLine,
+.NoticeLink,
+.PanelSubtitle,
+.CardLabel,
+.CardSubtitle,
+.EmptyHint {
+    overflow-wrap: anywhere;
+    word-break: break-word;   /* 老浏览器兜底 */
+}
+
+/* ------------------------------------------------------------ 日志折叠 */
+
+/* 超出预览条数的条目默认收起 */
+.LogItem.IsExtra { display: none; }
+
+/* 开关本体视觉隐藏但保留可聚焦，键盘可用空格切换 */
+.ExpandState {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ExpandState:checked ~ .LogList .LogItem.IsExtra { display: block; }
+
+.ExpandButton {
+    display: block;
+    margin: 14px 0 2px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--Accent);
+    background: var(--AccentWash);
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.25s var(--EaseSoft), opacity 0.25s var(--EaseSoft);
+}
+
+.ExpandButton:hover { opacity: 0.78; }
+
+.ExpandState:focus-visible ~ .ExpandButton {
+    outline: 2px solid var(--Accent);
+    outline-offset: 2px;
+}
+
+/* 展开前后切换文案 */
+.ExpandButton .ExpandLess { display: none; }
+.ExpandState:checked ~ .ExpandButton .ExpandMore { display: none; }
+.ExpandState:checked ~ .ExpandButton .ExpandLess { display: inline; }
+
+/* ------------------------------------------------------------ 服务卡片（3D） */
+
+.ServiceCard {
+    --TiltX: 0deg;
+    --TiltY: 0deg;
+    --PointerX: 50%;
+    --PointerY: 50%;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 16px;
+    color: var(--TextPrimary);
+
+    /* 真正的 3D：透视 + 绕轴旋转，子元素用 translateZ 分层 */
+    transform-style: preserve-3d;
+    transform: perspective(1000px)
+               rotateX(var(--TiltX))
+               rotateY(var(--TiltY))
+               translateZ(0);
+    transition: transform 0.7s var(--EaseOut),
+                box-shadow 0.7s var(--EaseOut),
+                border-color 0.4s var(--EaseSoft);
+}
+
+/* 指针在卡片上时缩短过渡，跟手；离开时用上面的长过渡平滑归位 */
+.ServiceCard.IsTilting {
+    transition: transform 0.1s linear, box-shadow 0.4s var(--EaseOut);
+    will-change: transform;
+}
+
+.ServiceCard.IsTilting,
+.ServiceCard:hover {
+    box-shadow: var(--ShadowFloat), inset 0 1px 0 var(--InnerHighlight);
+    border-color: var(--CardColor, var(--Accent));
+}
+
+/* 跟随指针的高光，模拟材料反光 */
+.ServiceCard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+        58% 58% at var(--PointerX) var(--PointerY),
+        rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 72%
+    );
+    transition: opacity 0.4s var(--EaseSoft);
+    /* 放在最高的 Z 层，压在文字之上。在 3D 上下文里靠 translateZ 排序，
+       写 z-index 是无效的 */
+    transform: translateZ(70px);
+}
+
+.ServiceCard.IsTilting::before { opacity: 1; }
+
+html[data-theme="dark"] .ServiceCard::before {
+    background: radial-gradient(
+        58% 58% at var(--PointerX) var(--PointerY),
+        rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0) 72%
+    );
+}
+
+/* Z 轴分层：文字最靠前，图标居中，形成真实视差 */
+.CardLabel    { transform: translateZ(46px); }
+.CardImageWrap{ transform: translateZ(28px); }
+.CardSubtitle { transform: translateZ(38px); }
+
+.CardLabel {
+    flex: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: center;
+    color: var(--TextPrimary);
+}
+
+.CardSubtitle {
+    flex: none;
+    font-size: 12px;
+    text-align: center;
+    color: var(--TextMuted);
+}
+
+.CardImageWrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+}
+
+.CardImage {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.16));
+    transition: filter 0.5s var(--EaseOut);
+}
+
+.ServiceCard.IsTilting .CardImage,
+.ServiceCard:hover .CardImage {
+    filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.22));
+}
+
+.CardImageFallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    font-size: 34px;
+    font-weight: 600;
+    color: #FFFFFF;
+    background: var(--CardColor);
+    border-radius: 22px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* 统一尺寸：所有卡片一致 */
+.ServiceCard { min-height: 158px; }
+.ServiceCard .CardImage { max-height: 78px; }
+
+/* ------------------------------------------------------------ 页脚 */
+
+.PageFooter {
+    flex: none;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    color: var(--TextMuted);
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+@media (max-width: 1440px) {
+    .MainArea { grid-template-columns: 1.24fr 1fr; }
+    .PanelTitle { font-size: 24px; }
+}
+
+/* ------------------------------------------------- 窄桌面 / 平板横屏（≤1180） */
+
+@media (max-width: 1180px) {
+    /* 卡片改三列，日志面板仍并排，45dvh 限高继续生效 */
+    .CardGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ------------------------------------------------- 平板竖屏（≤900） */
+
+@media (max-width: 900px) {
+    :root {
+        --GridGap: 14px;
+        --RadiusShell: 18px;
+        --RadiusCard: 16px;
+    }
+
+    .PageShell {
+        padding: 12px 16px 18px;
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+        padding-bottom: max(18px, env(safe-area-inset-bottom));
+    }
+
+    /* 两块日志面板改为上下堆叠 */
+    .MainArea {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "resource" "system" "cards";
+        grid-template-rows: auto auto auto;
+    }
+
+    /* 手机上嵌套滚动区域不好用，改回整页滚动 */
+    .LogPanel { max-height: none; }
+    .PanelBody { overflow-y: visible; }
+    .CardGrid { grid-auto-rows: auto; }
+
+    .PanelHeading { padding: 20px 20px 12px; }
+    .PanelBody    { padding: 4px 20px 22px; }
+    .PanelTitle   { font-size: 22px; }
+
+    .LogItem { font-size: 13.5px; }
+    .BrandArea { font-size: 19px; }
+}
+
+/* ------------------------------------------------- 手机（≤640） */
+
+@media (max-width: 640px) {
+    :root {
+        --GridGap: 11px;
+        --RadiusShell: 16px;
+        --RadiusCard: 15px;
+        --MaterialBlur: saturate(180%) blur(14px);
+        --ScrimBlur: saturate(140%) blur(4px);
+    }
+
+    .PageShell {
+        padding: 8px 11px 14px;
+        padding-left: max(11px, env(safe-area-inset-left));
+        padding-right: max(11px, env(safe-area-inset-right));
+        padding-bottom: max(14px, env(safe-area-inset-bottom));
+    }
+
+    .TopBar { padding: 8px 13px; border-radius: 14px; }
+    .BrandArea { font-size: 17px; gap: 5px; }
+    .BrandEmoji { font-size: 16px; }
+
+    /* 触控目标不小于 44px */
+    .IconButton { width: 44px; height: 44px; }
+    .IconButton svg { width: 22px; height: 22px; }
+
+    .PanelHeading { padding: 17px 15px 9px; }
+    .PanelBody    { padding: 2px 15px 19px; }
+    .PanelTitle   { font-size: 19px; }
+    .PanelSubtitle { font-size: 12.5px; }
+
+    .NoticeLine { font-size: 13px; line-height: 1.7; }
+    .LogItem    { font-size: 13px; line-height: 1.68; margin-bottom: 10px; }
+    .LogLink    { font-size: 12px; }
+
+    .CardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .ServiceCard { padding: 13px 11px; gap: 6px; min-height: 126px; }
+    .ServiceCard .CardImage { max-height: 64px; }
+    .CardLabel { font-size: 12.5px; }
+    .CardSubtitle { font-size: 11px; }
+    .CardImageFallback { width: 58px; height: 58px; font-size: 26px; border-radius: 17px; }
+
+    /* 手机上缩短 Z 距离，避免透视过强显得晕 */
+    .CardLabel     { transform: translateZ(26px); }
+    .CardImageWrap { transform: translateZ(16px); }
+    .CardSubtitle  { transform: translateZ(22px); }
+
+    .PageFooter { font-size: 11px; }
+}
+
+@media (max-width: 380px) {
+    .BrandTitle { max-width: 62vw; }
+    .CardLabel  { font-size: 12px; }
+    .LogItem    { font-size: 12.5px; }
+}
+
+/* ------------------------------------------------------------ 降级处理 */
+
+/* 触屏没有 hover，倾斜与高光由脚本跳过，这里兜住 hover 态的残留 */
+@media (hover: none) {
+    .ServiceCard:hover {
+        box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+        border-color: var(--Border);
+    }
+    .LogPanel:hover {
+        box-shadow: var(--ShadowRest), inset 0 1px 0 var(--InnerHighlight);
+        border-color: var(--Border);
+    }
+}
+
+/* 系统开了「减少动态效果」：全部静态化，3D 由脚本一并关闭 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .BackdropGlow { transform: none !important; }
+
+    .ServiceCard {
+        transform: none !important;
+        transform-style: flat;
+    }
+
+    .CardLabel,
+    .CardImageWrap,
+    .CardSubtitle { transform: none; }
+}
+
+/* 打印 */
+@media print {
+    .BackdropBase, .BackdropGlow, .BackdropScrim, .TopBarActions { display: none; }
+    .SurfacePanel, .SurfaceCard {
+        box-shadow: none;
+        border: 1px solid #DDD;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .LogPanel { max-height: none; }
+    .PanelBody { overflow-y: visible; }
+    body { background: #FFF; }
+}

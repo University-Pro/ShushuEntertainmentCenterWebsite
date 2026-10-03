@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="通用代理">
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#00E5B0" stroke-width="7"/>
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="11">
+    <path d="M34 50 H82" stroke="#2F80ED"/>
+    <path d="M68 36 L84 50 L68 64" stroke="#2F80ED"/>
+    <path d="M94 78 H46" stroke="#52B54B"/>
+    <path d="M60 64 L44 78 L60 92" stroke="#52B54B"/>
+  </g>
+</svg>

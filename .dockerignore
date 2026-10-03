@@ -1,0 +1,28 @@
+# 数据目录绝对不进镜像：
+#   MainPage.db  —— 含管理员密码哈希、两步验证密钥、全部访问记录
+#   SecretKey.txt —— 会话签名密钥，泄露即可伪造管理员登录
+# 运行时通过挂载卷提供。
+Data/
+
+# 版本控制与编辑器
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 日志与临时文件
+*.log
+*.db-wal
+*.db-shm
+
+# 与本镜像无关的仓库文件
+ReadMe.md
+ReferencePhoto.png
