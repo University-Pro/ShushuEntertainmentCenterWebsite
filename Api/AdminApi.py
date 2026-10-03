@@ -45,10 +45,21 @@ def LoginRequired(view_function):
 
     @functools.wraps(view_function)
     def Wrapper(*args, **kwargs):
-        if not session.get("AdminUser"):
+        account = Repository.GetAdmin(session["AdminUser"]) if session.get("AdminUser") else None
+        if not account or session.get("SessionVersion") != account["SessionVersion"]:
+            session.clear()
             if request.path.startswith("/Admin/Api/"):
                 return jsonify({"Success": False, "Message": "登录状态已失效，请重新登录"}), 401
             return redirect(url_for("AdminApi.LoginPage"))
+        if account["MustChangePassword"] and request.endpoint not in (
+            "AdminApi.ChangePasswordPage", "AdminApi.ChangePassword",
+        ):
+            if request.path.startswith("/Admin/Api/"):
+                return jsonify({
+                    "Success": False, "Message": "请先修改初始密码",
+                    "Data": {"NeedPasswordChange": True},
+                }), 403
+            return redirect(url_for("AdminApi.ChangePasswordPage"))
         return view_function(*args, **kwargs)
 
     return Wrapper
@@ -88,6 +99,24 @@ def DashboardPage():
     )
 
 
+@AdminBlueprint.route("/ChangePassword", methods=["GET"])
+@LoginRequired
+def ChangePasswordPage():
+    if not Repository.GetAdmin(session["AdminUser"])["MustChangePassword"]:
+        return redirect(url_for("AdminApi.DashboardPage"))
+    return render_template(
+        "AdminChangePasswordPage.html",
+        DefaultTheme=Repository.GetSetting("DefaultTheme", "auto"),
+    )
+
+
+def _CompleteLogin(account):
+    session.clear()
+    session.permanent = True
+    session["AdminUser"] = account["UserName"]
+    session["SessionVersion"] = account["SessionVersion"]
+
+
 # ------------------------------------------------------------------ 登录 / 登出
 
 
@@ -108,8 +137,8 @@ def DoLogin():
     if lock_message:
         return jsonify({"Success": False, "Message": lock_message}), 429
 
-    verified = Repository.VerifyAdmin(user_name, password)
-    if not verified:
+    account = Repository.AuthenticateAdmin(user_name, password)
+    if not account:
         remaining = Repository.RegisterFailedAttempt(
             attempt_key, user_name, MAX_LOGIN_FAILURES, LOGIN_LOCKOUT_MINUTES
         )
@@ -123,6 +152,8 @@ def DoLogin():
             "Message": "账号或密码不正确，还可尝试 {} 次".format(remaining),
         }), 401
 
+    verified = account["UserName"]
+    session.clear()
     session.permanent = True
 
     # 开了两步验证就先挂起，等第二因子通过才真正登录
@@ -132,13 +163,16 @@ def DoLogin():
         # 记下时间，挂起态只给几分钟。默认 session 是 7 天，
         # 过了第一因子就跟着续 7 天不合理
         session["PendingSince"] = time.time()
+        session["PendingSessionVersion"] = account["SessionVersion"]
         session.pop("AdminUser", None)
         return jsonify({"Success": True, "Data": {"NeedTotp": True, "UserName": verified}})
 
     Repository.ClearAllAttemptsForUser(verified)
-    session["AdminUser"] = verified
-    session.pop("PendingAdminUser", None)
-    return jsonify({"Success": True, "Data": {"NeedTotp": False, "UserName": verified}})
+    _CompleteLogin(account)
+    return jsonify({"Success": True, "Data": {
+        "NeedTotp": False, "UserName": verified,
+        "NeedPasswordChange": bool(account["MustChangePassword"]),
+    }})
 
 
 @AdminBlueprint.route("/Api/VerifyTotp", methods=["POST"])
@@ -147,6 +181,11 @@ def VerifyTotp():
     pending_user = session.get("PendingAdminUser")
     if not pending_user:
         return jsonify({"Success": False, "Message": "登录会话已过期，请重新登录"}), 401
+
+    account = Repository.GetAdmin(pending_user)
+    if not account or session.get("PendingSessionVersion") != account["SessionVersion"]:
+        session.clear()
+        return jsonify({"Success": False, "Message": "密码已更新，请重新登录"}), 401
 
     # 挂起态限时，避免「只过了密码」的半成品会话长期有效
     pending_since = session.get("PendingSince") or 0
@@ -210,9 +249,7 @@ def VerifyTotp():
         }), 401
 
     Repository.ClearAllAttemptsForUser(pending_user)
-    session["AdminUser"] = pending_user
-    session.pop("PendingAdminUser", None)
-    session.pop("PendingSince", None)
+    _CompleteLogin(account)
 
     message = "登录成功"
     if used_recovery_code:
@@ -225,15 +262,14 @@ def VerifyTotp():
             "UserName": pending_user,
             "UsedRecoveryCode": used_recovery_code,
             "RemainingRecoveryCodes": remaining_codes,
+            "NeedPasswordChange": bool(account["MustChangePassword"]),
         },
     })
 
 
 @AdminBlueprint.route("/Api/Logout", methods=["POST"])
 def DoLogout():
-    session.pop("AdminUser", None)
-    session.pop("PendingAdminUser", None)
-    session.pop("PendingSince", None)
+    session.clear()
     return jsonify({"Success": True})
 
 
@@ -244,6 +280,8 @@ def ChangePassword():
     old_password = payload.get("OldPassword") or ""
     new_password = payload.get("NewPassword") or ""
 
+    if not isinstance(old_password, str) or not isinstance(new_password, str):
+        return jsonify({"Success": False, "Message": "密码格式不正确"}), 400
     if len(new_password) < 6:
         return jsonify({"Success": False, "Message": "新密码至少 6 位"}), 400
 
@@ -251,7 +289,13 @@ def ChangePassword():
     if not Repository.VerifyAdmin(user_name, old_password):
         return jsonify({"Success": False, "Message": "原密码不正确"}), 400
 
-    Repository.ChangeAdminPassword(user_name, new_password)
+    if old_password == new_password:
+        return jsonify({"Success": False, "Message": "新密码不能与原密码相同"}), 400
+    version = Repository.ChangeAdminPassword(user_name, new_password, session["SessionVersion"])
+    if version is None:
+        session.clear()
+        return jsonify({"Success": False, "Message": "密码已更新，请重新登录"}), 401
+    session["SessionVersion"] = version
     return jsonify({"Success": True, "Message": "密码已更新"})
 
 

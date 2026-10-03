@@ -27,6 +27,8 @@ SCHEMA_STATEMENTS = [
         Id           INTEGER PRIMARY KEY AUTOINCREMENT,
         UserName     TEXT NOT NULL UNIQUE,
         PasswordHash TEXT NOT NULL,
+        MustChangePassword INTEGER NOT NULL DEFAULT 0,
+        SessionVersion INTEGER NOT NULL DEFAULT 0,
         UpdatedAt    TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     )
     """,
@@ -230,20 +232,47 @@ def _MigrateLoginAttempt(connection):
         )
 
 
+def _MigrateAdminAccount(connection):
+    """保留已有密码；旧数据库使用默认密码的账号也必须修改。"""
+    from werkzeug.security import check_password_hash
+    from AppConfig import DEFAULT_ADMIN_PASSWORD
+
+    columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(AdminAccount)")
+    }
+    if "MustChangePassword" not in columns:
+        connection.execute(
+            "ALTER TABLE AdminAccount ADD COLUMN MustChangePassword INTEGER NOT NULL DEFAULT 0"
+        )
+        for account in connection.execute("SELECT UserName, PasswordHash FROM AdminAccount"):
+            if check_password_hash(account["PasswordHash"], DEFAULT_ADMIN_PASSWORD):
+                connection.execute(
+                    "UPDATE AdminAccount SET MustChangePassword = 1 WHERE UserName = ?",
+                    (account["UserName"],),
+                )
+    if "SessionVersion" not in columns:
+        connection.execute(
+            "ALTER TABLE AdminAccount ADD COLUMN SessionVersion INTEGER NOT NULL DEFAULT 0"
+        )
+
+
 def InitializeDatabase():
     """建表；若数据库为空则写入种子数据与初始管理员。"""
     with UseConnection(commit=True) as connection:
+        # 串行化检查和写入，避免多个进程首次启动时覆盖已创建的管理员。
+        connection.execute("BEGIN IMMEDIATE")
         for statement in SCHEMA_STATEMENTS:
             connection.execute(statement)
 
         _MigrateLoginAttempt(connection)
+        _MigrateAdminAccount(connection)
 
         already_seeded = connection.execute(
             "SELECT COUNT(*) AS Total FROM SiteSetting"
         ).fetchone()["Total"]
 
-    if not already_seeded:
-        # 延迟导入，避免模块循环依赖
-        from Core.SeedData import SeedDatabase
+        if not already_seeded:
+            # 延迟导入，避免模块循环依赖
+            from Core.SeedData import SeedDatabase
 
-        SeedDatabase()
+            SeedDatabase(connection)

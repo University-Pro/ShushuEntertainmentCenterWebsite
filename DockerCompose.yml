@@ -27,8 +27,6 @@ services:
     environment:
       TZ: Asia/Shanghai
       SERVER_PORT: "12339"
-      # 首次建库必填，至少 12 个字符。已有数据库不会因此重置密码。
-      SHUSHU_ADMIN_PASSWORD: "${SHUSHU_ADMIN_PASSWORD:-}"
 
       # 会话密钥。留空则用卷里的 Data/SecretKey.txt（首次启动自动生成）。
       # 需要多副本共享会话时才设置，一旦设置就要保管好——

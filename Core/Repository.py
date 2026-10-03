@@ -246,23 +246,34 @@ def GetAdmin(user_name):
     return _ToDict(QueryOne("SELECT * FROM AdminAccount WHERE UserName = ?", (user_name,)))
 
 
-def VerifyAdmin(user_name, password):
-    """校验账号密码，通过返回用户名，否则返回 None。"""
+def AuthenticateAdmin(user_name, password):
+    """返回与本次密码校验一致的账号和会话版本。"""
     account = GetAdmin(user_name)
     if not account:
         return None
     if not check_password_hash(account["PasswordHash"], password):
         return None
-    return account["UserName"]
+    return account
 
 
-def ChangeAdminPassword(user_name, new_password):
-    Execute(
+def VerifyAdmin(user_name, password):
+    """校验账号密码，通过返回用户名，否则返回 None。"""
+    account = AuthenticateAdmin(user_name, password)
+    return account["UserName"] if account else None
+
+
+def ChangeAdminPassword(user_name, new_password, session_version):
+    """原子更新密码和初始化状态，同时撤销其他登录与两步验证挂起会话。"""
+    result = ExecuteReturning(
         """UPDATE AdminAccount
-              SET PasswordHash = ?, UpdatedAt = datetime('now', 'localtime')
-            WHERE UserName = ?""",
-        (generate_password_hash(new_password), user_name),
+              SET PasswordHash = ?, MustChangePassword = 0,
+                  SessionVersion = SessionVersion + 1,
+                  UpdatedAt = datetime('now', 'localtime')
+            WHERE UserName = ? AND SessionVersion = ?
+            RETURNING SessionVersion""",
+        (generate_password_hash(new_password), user_name, session_version),
     )
+    return result["SessionVersion"] if result else None
 
 
 # ------------------------------------------------------------------ 两步验证

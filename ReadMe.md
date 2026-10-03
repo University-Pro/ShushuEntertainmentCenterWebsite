@@ -26,7 +26,7 @@
 | 更新公告 | 资源与系统日志分区展示，支持提示信息和日志折叠 |
 | 主题与外观 | 浅色、深色及跟随系统模式，可配置站点背景 |
 | 后台管理 | 在线维护站点设置、服务卡片、日志和提示信息 |
-| 账号保护 | 密码登录、失败锁定、TOTP 两步验证及一次性恢复码 |
+| 账号保护 | 首次登录强制改密、失败锁定、TOTP 两步验证及一次性恢复码 |
 | 访问统计 | 浏览量、独立访客、每日趋势、时段分布、热门页面及访问明细 |
 | 轻量部署 | SQLite 存储，支持 Docker Compose 与 systemd，Gunicorn 提供服务 |
 
@@ -34,16 +34,11 @@
 
 ## 快速部署
 
-推荐使用 Docker Compose。以下终端示例使用 **Bash**，首次启动需要设置至少 12 个字符的管理员密码。
+推荐使用 Docker Compose。无需预先配置管理员密码，首次登录时在页面完成设置。
 
 ```bash
 git clone https://github.com/University-Pro/ShushuEntertainmentCenterWebsite.git
 cd ShushuEntertainmentCenterWebsite
-
-# 安全输入初始密码，输入内容不会回显
-read -r -s -p "初始管理员密码：" SHUSHU_ADMIN_PASSWORD
-echo
-export SHUSHU_ADMIN_PASSWORD
 
 # 构建并启动
 docker compose -f DockerCompose.yml up -d --build
@@ -55,7 +50,9 @@ docker compose -f DockerCompose.yml up -d --build
 | 管理后台 | http://localhost:12339/Admin/Login |
 | 健康检查 | http://localhost:12339/Health |
 
-初始管理员用户名为 `admin`，密码使用上面设置的值。首次启动会创建数据库与示例内容；已有数据库的账号不会被环境变量重置。初始化后可移除密码环境变量，后续在后台修改密码。
+首次启动会创建数据库与示例内容，初始账号为 **`admin / admin`**。登录后会强制进入修改密码页面，新密码至少 6 个字符；完成修改后才能使用后台管理和访问统计。
+
+已有数据库的密码会保留，不会被重置为 `admin`。请在首次部署后及时完成账号初始化。
 
 ### 日常维护
 
@@ -90,15 +87,11 @@ sudo python3 -m venv /opt/shushu-mainpage/.venv
 sudo /opt/shushu-mainpage/.venv/bin/python -m pip install -r /opt/shushu-mainpage/Requirements.txt
 sudo install -d -o shushu -g shushu -m 700 /opt/shushu-mainpage/Data
 
-# 安装配置与服务文件
-sudo install -o root -g root -m 600 /opt/shushu-mainpage/Systemd/ShushuMainPage.env.example /etc/ShushuMainPage.env
+# 安装服务文件
 sudo install -o root -g root -m 644 /opt/shushu-mainpage/Systemd/ShushuMainPage.service /etc/systemd/system/ShushuMainPage.service
-sudoedit /etc/ShushuMainPage.env
 ```
 
-启动前，在配置文件中填入至少 12 个字符的 `SHUSHU_ADMIN_PASSWORD`；通过 HTTPS 访问时将 `SESSION_COOKIE_SECURE` 设为 `true`。配置采用 `KEY=value` 格式，不写 `export`；含空格或 `#` 的值请加双引号。已有数据库无需重新设置初始密码，首次初始化完成后可清空该项。
-
-服务文件与 `.env.example` 示例随源码提交；填写真实密码的 `.env` 文件已被 `.gitignore` 排除，请勿将密码写入 `.service` 或示例文件。
+服务直接运行虚拟环境中的 Gunicorn，无需环境配置文件或启动脚本。首次登录使用 `admin / admin`，按页面提示修改密码即可。
 
 ```bash
 sudo systemctl daemon-reload
@@ -114,7 +107,7 @@ sudo systemctl status ShushuMainPage
 # 查看实时日志
 sudo journalctl -u ShushuMainPage -f
 
-# 修改环境配置后重启
+# 重启服务
 sudo systemctl restart ShushuMainPage
 
 # 停止服务 / 取消开机启动
@@ -128,7 +121,7 @@ sudo /opt/shushu-mainpage/.venv/bin/python -m pip install -r /opt/shushu-mainpag
 sudo systemctl start ShushuMainPage
 ```
 
-若更新包含服务文件改动，请重新复制 `.service` 文件并执行 `daemon-reload`，再重启服务。自定义安装位置时，需同步修改服务文件中的 `WorkingDirectory`、`PATH`、`ExecStart` 和 `ReadWritePaths`；数据目录必须对服务账号可写。服务默认禁止访问用户主目录，建议将项目放在 `/opt` 下。
+若更新包含服务文件改动，请重新复制 `.service` 文件并执行 `daemon-reload`，再重启服务。自定义安装位置时，修改服务文件中的 `WorkingDirectory` 与 `ExecStart`；调整端口时修改 `--bind`。项目和虚拟环境必须对服务账号可读，数据目录必须可写。
 
 ## 自定义站点
 
@@ -152,16 +145,15 @@ sudo systemctl start ShushuMainPage
 
 | 变量 | 默认值 | 用途 |
 | --- | --- | --- |
-| `SHUSHU_ADMIN_PASSWORD` | 空 | 首次建库必填，至少 12 个字符 |
 | `SHUSHU_SECRET_KEY` | 自动生成并持久化 | 覆盖会话签名密钥 |
 | `SESSION_COOKIE_SECURE` | `false` | HTTPS 部署时设为 `true` |
-| `SERVER_PORT` | `12339` | Docker / systemd 的监听端口 |
+| `SERVER_PORT` | `12339` | Docker 的监听端口 |
 | `GUNICORN_WORKERS` | `2` | Gunicorn 工作进程数 |
 | `GUNICORN_THREADS` | `4` | 每个工作进程的线程数 |
 | `GUNICORN_TIMEOUT` | `60` | Gunicorn 请求超时秒数 |
 | `GUNICORN_LOG_LEVEL` | `info` | Gunicorn 日志级别 |
 
-容器环境变量在 `DockerCompose.yml` 的 `environment` 中配置；`SHUSHU_ADMIN_PASSWORD` 已支持从当前终端读取。systemd 环境变量在 `/etc/ShushuMainPage.env` 中配置。本地运行的地址、端口和访问统计选项在 `AppConfig.py` 中配置。
+以上环境变量为可选配置，Docker 在 `DockerCompose.yml` 的 `environment` 中设置。systemd 的端口和进程数直接在 `.service` 的 `ExecStart` 中调整；需要 HTTPS Cookie 等可选配置时，可添加 `Environment=SESSION_COOKIE_SECURE=true`。本地运行的地址、端口和访问统计选项在 `AppConfig.py` 中配置。
 
 修改容器监听端口时，需同步调整 Compose 端口映射与健康检查地址。
 
@@ -182,11 +174,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r Requirements.txt
 
-# 首次建库时设置；已有数据库可跳过
-read -r -s -p "初始管理员密码：" SHUSHU_ADMIN_PASSWORD
-echo
-export SHUSHU_ADMIN_PASSWORD
-
 python RunServer.py
 ```
 
@@ -201,8 +188,8 @@ python RunServer.py
 ├── Requirements.txt        Python 依赖
 ├── Dockerfile              容器镜像
 ├── DockerCompose.yml       服务编排
-├── EntryPoint.sh           Docker / systemd 启动脚本
-├── Systemd/                Linux 服务文件与环境配置示例
+├── EntryPoint.sh           Docker 参数启动脚本
+├── Systemd/                Linux 服务文件
 ├── Api/                    页面与接口
 ├── Core/                   数据存储、账号安全与访问统计
 ├── Web/

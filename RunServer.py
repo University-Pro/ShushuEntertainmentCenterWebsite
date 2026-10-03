@@ -4,7 +4,7 @@
     python RunServer.py
 
 首次运行会自动创建 Data/MainPage.db 并写入参考图中的初始内容。
-初始管理员：admin，首次建库密码由 SHUSHU_ADMIN_PASSWORD 环境变量提供。
+初始管理员：admin / admin，首次登录后必须修改密码。
 """
 
 import time
@@ -43,6 +43,12 @@ CONTENT_SECURITY_POLICY = "; ".join([
 
 def CreateApplication():
     """组装 Flask 应用。"""
+    InitializeDatabase()
+    try:
+        Analytics.PurgeOldVisits()
+    except Exception as error:
+        print("  访问记录清理失败（不影响启动）：{}".format(error))
+
     application = Flask(
         __name__,
         template_folder=str(TEMPLATE_FOLDER),
@@ -118,8 +124,8 @@ def PrintSecurityWarnings():
     account = Repository.GetAdmin(DEFAULT_ADMIN_USERNAME)
     if account and DEFAULT_ADMIN_PASSWORD and Repository.VerifyAdmin(DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD):
         warnings.append(
-            "后台仍在使用环境变量提供的初始口令。\n"
-            "      建议登录后台 →「账号安全」修改密码，并移除初始化密码环境变量。"
+            "后台仍在使用初始口令 admin / admin。\n"
+            "      首次登录后必须修改密码，修改前无法访问管理功能。"
         )
 
     totp_record = Repository.GetTotpRecord(DEFAULT_ADMIN_USERNAME)
@@ -141,12 +147,6 @@ def PrintSecurityWarnings():
 
 
 def Main():
-    InitializeDatabase()
-    try:
-        Analytics.PurgeOldVisits()
-    except Exception as error:
-        print("  访问记录清理失败（不影响启动）：{}".format(error))
-
     application = CreateApplication()
 
     print("=" * 56)

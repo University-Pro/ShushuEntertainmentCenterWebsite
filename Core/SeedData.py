@@ -183,13 +183,8 @@ SERVICE_CARDS = [
 ]
 
 
-def SeedDatabase():
+def SeedDatabase(connection=None):
     """把上面的常量写进数据库。仅在空库时调用一次。"""
-    if len(DEFAULT_ADMIN_PASSWORD) < 12:
-        raise RuntimeError(
-            "首次启动必须设置 SHUSHU_ADMIN_PASSWORD，至少 12 个字符。"
-            "已有数据库的管理员密码请在后台修改。"
-        )
     statements = []
 
     for key, value in SITE_SETTINGS:
@@ -199,7 +194,7 @@ def SeedDatabase():
 
     statements.append(
         (
-            "INSERT OR REPLACE INTO AdminAccount (UserName, PasswordHash) VALUES (?, ?)",
+            "INSERT OR REPLACE INTO AdminAccount (UserName, PasswordHash, MustChangePassword) VALUES (?, ?, 1)",
             (DEFAULT_ADMIN_USERNAME, generate_password_hash(DEFAULT_ADMIN_PASSWORD)),
         )
     )
@@ -261,4 +256,8 @@ def SeedDatabase():
             )
         )
 
-    ExecuteMany(statements)
+    if connection is None:
+        ExecuteMany(statements)
+    else:
+        for sql, params in statements:
+            connection.execute(sql, params)

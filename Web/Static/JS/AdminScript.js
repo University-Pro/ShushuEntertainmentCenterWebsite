@@ -70,6 +70,10 @@
             return response.json().catch(function () {
                 throw new Error("服务端返回了非 JSON 内容");
             }).then(function (payload) {
+                if (response.status === 403 && payload.Data && payload.Data.NeedPasswordChange) {
+                    window.location.href = "/Admin/ChangePassword";
+                    throw new Error("请先修改初始密码");
+                }
                 if (!response.ok || !payload.Success) {
                     throw new Error(payload.Message || "请求失败");
                 }
@@ -201,7 +205,7 @@
                     totpCode.focus();
                 } else {
                     ShowMessage(loginMessage, "登录成功，正在跳转…", true);
-                    window.location.href = "/Admin/";
+                    window.location.href = payload.NeedPasswordChange ? "/Admin/ChangePassword" : "/Admin/";
                 }
             }).catch(function (error) {
                 ShowMessage(loginMessage, error.message, false);
@@ -226,7 +230,7 @@
                     window.alert("已使用恢复码登录。\n剩余恢复码："
                         + payload.RemainingRecoveryCodes + " 个，建议尽快重新生成。");
                 }
-                window.location.href = "/Admin/";
+                window.location.href = payload.NeedPasswordChange ? "/Admin/ChangePassword" : "/Admin/";
             }).catch(function (error) {
                 ShowMessage(totpMessage, error.message, false);
                 totpCode.value = "";
@@ -267,6 +271,47 @@
     }
 
     InitializeLoginPage();
+
+    /* ---------------------------------------------------------- 首次改密 */
+
+    (function InitializeInitialPasswordPage() {
+        var form = Element("InitialPasswordForm");
+        if (!form) {
+            return;
+        }
+        var button = Element("InitialPasswordButton");
+        var message = Element("InitialPasswordMessage");
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            message.hidden = true;
+            var password = Element("InitialNewPassword").value;
+            if (password !== Element("InitialConfirmPassword").value) {
+                message.textContent = "两次输入的新密码不一致";
+                message.hidden = false;
+                return;
+            }
+            button.disabled = true;
+            ApiRequest("/Admin/Api/ChangePassword", "POST", {
+                OldPassword: Element("InitialOldPassword").value,
+                NewPassword: password
+            }).then(function () {
+                window.location.href = "/Admin/";
+            }).catch(function (error) {
+                message.textContent = error.message;
+                message.hidden = false;
+                button.disabled = false;
+            });
+        });
+        Element("InitialLogoutButton").addEventListener("click", function () {
+            ApiRequest("/Admin/Api/Logout", "POST").then(function () {
+                window.location.href = "/Admin/Login";
+            }).catch(function (error) {
+                message.textContent = error.message;
+                message.hidden = false;
+            });
+        });
+        Element("InitialOldPassword").focus();
+    })();
 
     /* ---------------------------------------------------------- 控制台 */
 

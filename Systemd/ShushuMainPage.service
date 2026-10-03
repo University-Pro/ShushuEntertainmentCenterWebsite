@@ -1,36 +1,15 @@
 [Unit]
 Description=Shushu Entertainment Center Website
 After=network.target
-StartLimitIntervalSec=60
-StartLimitBurst=5
 
 [Service]
-Type=simple
 User=shushu
 Group=shushu
 WorkingDirectory=/opt/shushu-mainpage
-Environment="PATH=/opt/shushu-mainpage/.venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="TZ=Asia/Shanghai"
-Environment="PYTHONUNBUFFERED=1"
-Environment="PYTHONDONTWRITEBYTECODE=1"
-EnvironmentFile=/etc/ShushuMainPage.env
-
-# Reuse database initialization and Gunicorn startup from the container entrypoint.
-ExecStart=/bin/sh /opt/shushu-mainpage/EntryPoint.sh
+Environment=TZ=Asia/Shanghai
+ExecStart=/opt/shushu-mainpage/.venv/bin/gunicorn --preload --workers 2 --threads 4 --bind 0.0.0.0:12339 --access-logfile - "RunServer:CreateApplication()"
 Restart=on-failure
 RestartSec=5
-TimeoutStopSec=90
-KillMode=mixed
-
-UMask=0077
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectHome=true
-ProtectSystem=strict
-ReadWritePaths=/opt/shushu-mainpage/Data
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=ShushuMainPage
 
 [Install]
 WantedBy=multi-user.target

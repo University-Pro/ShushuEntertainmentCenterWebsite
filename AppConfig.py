@@ -102,5 +102,5 @@ LOGIN_LOCKOUT_MINUTES = 15
 # ------------------------------------------------------------------ 初始管理员
 # 仅在数据库首次创建时写入，之后请到后台「账号安全」中修改。
 DEFAULT_ADMIN_USERNAME = "admin"
-# 仅首次建库使用；未设置则拒绝初始化，已有账号不会被环境变量重置。
-DEFAULT_ADMIN_PASSWORD = os.environ.get("SHUSHU_ADMIN_PASSWORD", "")
+# 初始口令仅用于首次登录；修改前不开放管理功能。
+DEFAULT_ADMIN_PASSWORD = "admin"
