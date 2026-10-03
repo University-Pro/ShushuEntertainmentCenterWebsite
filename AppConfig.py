@@ -5,7 +5,6 @@
 """
 
 import os
-from ipaddress import ip_network
 from pathlib import Path
 
 # ------------------------------------------------------------------ 路径配置
@@ -20,13 +19,6 @@ DATABASE_FILE = DATA_FOLDER / "MainPage.db"
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 12339
 DEBUG_MODE = False
-
-# 默认不信任转发头；仅配置实际反向代理的 IP / CIDR，不能填任意客户端网段。
-TRUSTED_PROXY_NETWORKS = tuple(
-    ip_network(value.strip(), strict=False)
-    for value in os.environ.get("SHUSHU_TRUSTED_PROXIES", "").split(",")
-    if value.strip()
-)
 
 # ------------------------------------------------------------------ 安全配置
 #

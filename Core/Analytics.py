@@ -17,13 +17,12 @@
 import hashlib
 import hmac
 import re
-from ipaddress import ip_address
 from datetime import datetime, timedelta
 
 from AppConfig import (
     ANALYTICS_IGNORED_PREFIXES, ANALYTICS_MAX_USER_AGENT_LENGTH,
     ANALYTICS_RETENTION_DAYS, ANALYTICS_STORE_RAW_IP, ANALYTICS_TOP_LIMIT,
-    LoadOrCreateSecretKey, TRUSTED_PROXY_NETWORKS,
+    LoadOrCreateSecretKey,
 )
 from Core.Database import Execute, QueryAll, QueryOne
 
@@ -66,24 +65,9 @@ def IsBot(user_agent):
     return bool(_BOT_PATTERN.search(user_agent or ""))
 
 
-def ResolveClientIp(remote_addr, forwarded_for):
-    """仅信任已配置代理，从右向左跳过可信代理，忽略客户端伪造的前缀。"""
-    fallback = (remote_addr or "unknown")[:64]
-    try:
-        peer = ip_address(remote_addr)
-        if not any(peer in network for network in TRUSTED_PROXY_NETWORKS):
-            return fallback
-        if not forwarded_for:
-            return fallback
-        chain = [ip_address(value.strip()) for value in forwarded_for.split(",")]
-    except ValueError:
-        return fallback
-
-    for address in reversed(chain):
-        if not any(peer in network for network in TRUSTED_PROXY_NETWORKS):
-            break
-        peer = address
-    return str(peer)
+def ResolveClientIp(remote_addr):
+    """仅使用实际连接来源，不解析任何代理转发头。"""
+    return (remote_addr or "unknown")[:64]
 
 
 def BuildVisitorHash(client_ip, user_agent):

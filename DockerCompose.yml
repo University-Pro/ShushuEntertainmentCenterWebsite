@@ -29,8 +29,6 @@ services:
       SERVER_PORT: "12339"
       # 首次建库必填，至少 12 个字符。已有数据库不会因此重置密码。
       SHUSHU_ADMIN_PASSWORD: "${SHUSHU_ADMIN_PASSWORD:-}"
-      # 默认忽略转发头；需要代理时只填实际代理 IP / CIDR，逗号分隔。
-      SHUSHU_TRUSTED_PROXIES: "${SHUSHU_TRUSTED_PROXIES:-}"
 
       # 会话密钥。留空则用卷里的 Data/SecretKey.txt（首次启动自动生成）。
       # 需要多副本共享会话时才设置，一旦设置就要保管好——

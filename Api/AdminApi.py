@@ -24,9 +24,7 @@ PENDING_TOTP_SECONDS = 300
 
 def _ClientIp():
     """取请求来源 IP，与访问统计共用同一套解析规则。"""
-    return Analytics.ResolveClientIp(
-        request.remote_addr, request.headers.get("X-Forwarded-For", "")
-    )
+    return Analytics.ResolveClientIp(request.remote_addr)
 
 
 def _BuildLockMessage(attempt_key):

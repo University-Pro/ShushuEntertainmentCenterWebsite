@@ -9,9 +9,9 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="stylesheet" href="{{ url_for('static', filename='Css/MainStyle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/MainStyle.css') }}">
     {# 主题必须在首屏绘制前定下来，所以这个脚本放在 head 里同步加载 #}
-    <script src="{{ url_for('static', filename='Js/ThemeBoot.js') }}"></script>
+    <script src="{{ url_for('static', filename='JS/ThemeBoot.js') }}"></script>
 </head>
 <body>
 {# 背景：填了 BackgroundImageUrl 用图片，否则走内置渐变 #}
@@ -144,6 +144,6 @@
     </footer>
 </div>
 
-<script src="{{ url_for('static', filename='Js/MainScript.js') }}"></script>
+<script src="{{ url_for('static', filename='JS/MainScript.js') }}"></script>
 </body>
 </html>

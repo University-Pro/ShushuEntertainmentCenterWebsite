@@ -87,9 +87,7 @@ def CreateApplication():
                 path=request.path,
                 status_code=response.status_code,
                 duration_ms=int((time.perf_counter() - started) * 1000),
-                client_ip=Analytics.ResolveClientIp(
-                    request.remote_addr, request.headers.get("X-Forwarded-For", "")
-                ),
+                client_ip=Analytics.ResolveClientIp(request.remote_addr),
                 user_agent=request.headers.get("User-Agent", ""),
                 referer=request.headers.get("Referer", ""),
             )
